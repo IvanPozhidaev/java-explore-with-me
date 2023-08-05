@@ -27,20 +27,20 @@ public class StatsClient {
     }
 
 
-    public ResponseEntity<Void> saveStats(String app, String uri, String ip, LocalDateTime dateTime) {
+    public void saveStats(String app, String uri, String ip, LocalDateTime dateTime) {
         HitDto body = new HitDto(app, uri, ip, dateTime);
-        return rest.postForEntity("/hit", body, Void.class);
+        rest.postForEntity("/hit", body, Void.class);
     }
 
-    public List<StatsDto> getStats(LocalDateTime start, LocalDateTime end, @Nullable String[] uris, @Nullable boolean uniq) {
+    public List<StatsDto> getStats(LocalDateTime start, LocalDateTime end, @Nullable String[] uris, @Nullable boolean unique) {
         HttpEntity<List<StatsDto>> requestEntity = new HttpEntity<>(defaultHeaders());
         if (uris != null) {
-            Map<String, Object> parametersUris = Map.of("start", encodeDateTime(start), "end", encodeDateTime(end), "uris", uris, "unique", uniq);
+            Map<String, Object> parametersUris = Map.of("start", encodeDateTime(start), "end", encodeDateTime(end), "uris", uris, "unique", unique);
             ResponseEntity<StatsDto[]> response = rest.exchange("/stats?start={start}&end={end}&uris={uris}&unique={unique}", HttpMethod.GET, requestEntity, StatsDto[].class, parametersUris);
             StatsDto[] result = response.getBody();
             return Arrays.stream(result).collect(Collectors.toList());
         } else {
-            Map<String, Object> parameters = Map.of("start", encodeDateTime(start), "end", encodeDateTime(end), "unique", uniq);
+            Map<String, Object> parameters = Map.of("start", encodeDateTime(start), "end", encodeDateTime(end), "unique", unique);
             ResponseEntity<StatsDto[]> response = rest.exchange("/stats?start={start}&end={end}&uris={uris}&unique={unique}", HttpMethod.GET, requestEntity, StatsDto[].class, parameters);
             StatsDto[] result = response.getBody();
             return Arrays.stream(result).collect(Collectors.toList());
