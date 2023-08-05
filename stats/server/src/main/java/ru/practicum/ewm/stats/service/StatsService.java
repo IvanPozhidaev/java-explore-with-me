@@ -6,11 +6,9 @@ import ru.practicum.ewm.stats.collective.HitDto;
 import ru.practicum.ewm.stats.collective.StatsDto;
 import ru.practicum.ewm.stats.model.ConverterModelDto;
 import ru.practicum.ewm.stats.model.HitModel;
-import ru.practicum.ewm.stats.model.StatsModel;
 import ru.practicum.ewm.stats.repository.StatsRepositoryJpa;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
