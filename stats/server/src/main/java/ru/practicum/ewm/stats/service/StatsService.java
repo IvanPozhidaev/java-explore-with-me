@@ -2,7 +2,8 @@ package ru.practicum.ewm.stats.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ru.practicum.ewm.stats.collective.*;
+import ru.practicum.ewm.stats.collective.HitDto;
+import ru.practicum.ewm.stats.collective.StatsDto;
 import ru.practicum.ewm.stats.model.ConverterModelDto;
 import ru.practicum.ewm.stats.model.HitModel;
 import ru.practicum.ewm.stats.model.StatsModel;
