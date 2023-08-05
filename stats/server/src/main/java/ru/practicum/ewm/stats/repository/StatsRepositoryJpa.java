@@ -26,11 +26,11 @@ public interface StatsRepositoryJpa extends JpaRepository<HitModel, Long> {
             "from hits where uri in :uris " +
             "and (date_time between :start and :end) " +
             "group by application, uri order by countIp desc", nativeQuery = true)
-    List<StatsDto> findStatsByUris(LocalDateTime start, LocalDateTime end, String[] uris);
+    List<StatsDto> findStatsByUris(LocalDateTime start, LocalDateTime end, List<String> uris);
 
     @Query(value = "select application, uri, count(distinct remote_ip) as countIp " +
             "from hits where uri in :uris " +
             "and (date_time between :start and :end) " +
             "group by application, uri order by countIp desc", nativeQuery = true)
-    List<StatsDto> findStatsByUrisUniqueIp(LocalDateTime start, LocalDateTime end, String[] uris);
+    List<StatsDto> findStatsByUrisUniqueIp(LocalDateTime start, LocalDateTime end, List<String> uris);
 }

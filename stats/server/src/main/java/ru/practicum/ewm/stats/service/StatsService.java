@@ -26,7 +26,7 @@ public class StatsService {
         statsRepository.save(addedHitModel);
     }
 
-    public List<StatsDto> getStats(LocalDateTime start, LocalDateTime end, String[] uris, boolean uniq) {
+    public List<StatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean uniq) {
         if (uniq) {
             if (uris == null) {
                 return statsRepository.findAllUniqueIp(start, end);
