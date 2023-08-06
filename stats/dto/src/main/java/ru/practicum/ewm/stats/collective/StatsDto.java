@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor(force = true)
 public class StatsDto {
-
     private String app;
     private String uri;
     private Long hits;

@@ -1,6 +1,8 @@
 package ru.practicum.ewm.stats.client;
 
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import ru.practicum.ewm.stats.collective.HitDto;
@@ -10,10 +12,9 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 @Service
 public class StatsClient {
@@ -36,40 +37,32 @@ public class StatsClient {
         HttpEntity<List<StatsDto>> requestEntity = new HttpEntity<>(defaultHeaders());
 
         if (uris != null && !uris.isEmpty()) {
-            String urisString = uris.stream()
-                    .collect(Collectors.joining(","));
+            String urisString = String.join(",", uris);
 
-            Map<String, Object> parameters = Map.of("start", encodeDateTime(start),
+            Map<String, Object> parameters = Map.of(
+                    "start", encodeDateTime(start),
                     "end", encodeDateTime(end),
                     "uris", urisString,
                     "unique", unique);
 
-            ResponseEntity<StatsDto[]> response = rest.exchange("/stats?start={start}&end={end}&uris={uris}&unique={unique}",
-                    HttpMethod.GET,
-                    requestEntity,
+            StatsDto[] response = rest.getForObject(
+                    "/stats?start={start}&end={end}&uris={uris}&unique={unique}",
                     StatsDto[].class,
                     parameters);
 
-            StatsDto[] result = response.getBody();
-
-            return Arrays.stream(result).collect(Collectors.toList());
-
-        } else {
-            Map<String, Object> parameters = Map.of("start", encodeDateTime(start),
-                    "end", encodeDateTime(end),
-                    "unique", unique);
-
-            ResponseEntity<StatsDto[]> response = rest.exchange("/stats?start={start}&end={end}&uris={uris}&unique={unique}",
-                    HttpMethod.GET,
-                    requestEntity,
-                    StatsDto[].class,
-                    parameters);
-
-            StatsDto[] result = response.getBody();
-
-            return Arrays.stream(result).collect(Collectors.toList());
-
+            return Objects.isNull(response) ? List.of() : List.of(response);
         }
+
+        Map<String, Object> parameters = Map.of("start", encodeDateTime(start),
+                "end", encodeDateTime(end),
+                "unique", unique);
+
+        StatsDto[] response = rest.getForObject(
+                "/stats?start={start}&end={end}&uris={uris}&unique={unique}",
+                StatsDto[].class,
+                parameters);
+
+        return Objects.isNull(response) ? List.of() : List.of(response);
 
     }
 

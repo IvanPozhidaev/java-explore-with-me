@@ -13,7 +13,7 @@ public class ConverterModelDto {
         model.setApp(dto.getApp());
         model.setUri(dto.getUri());
         model.setIp(dto.getIp());
-        model.setTimestamp(dto.getTimestamp());
+        model.setDateTime(dto.getTimestamp());
         return model;
     }
 

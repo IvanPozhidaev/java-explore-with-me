@@ -36,7 +36,7 @@ public class StatsService {
             if (uris == null) {
                 return statsRepository.findAll(start, end);
             }
-            return statsRepository.findStatsByUris(start, end, uris);
+            return statsRepository.findAllByUris(start, end, uris);
         }
     }
 }

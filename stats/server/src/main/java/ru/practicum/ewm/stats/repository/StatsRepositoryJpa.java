@@ -12,25 +12,34 @@ import java.util.List;
 @EnableJpaRepositories
 public interface StatsRepositoryJpa extends JpaRepository<HitModel, Long> {
 
-    @Query(value = "select application, uri, count(remote_ip) as countIp " +
-            "from hits where (date_time between :start and :end) " +
-            "group by application, uri order by countIp desc", nativeQuery = true)
+    @Query("select new ru.practicum.ewm.stats.collective.StatsDto(h.app, h.uri, count(h.ip)) " +
+            "from HitModel h " +
+            "where h.dateTime between ?1 and ?2 " +
+            "group by h.app, h.uri " +
+            "order by count(h.ip) desc")
     List<StatsDto> findAll(LocalDateTime start, LocalDateTime end);
 
-    @Query(value = "select application, uri, count(distinct remote_ip) as countIp " +
-            "from hits where (date_time between :start and :end) " +
-            "group by application, uri order by countIp desc", nativeQuery = true)
+    @Query("select new ru.practicum.ewm.stats.collective.StatsDto(h.app, h.uri, count(distinct h.ip)) " +
+            "from HitModel h " +
+            "where h.dateTime between ?1 and ?2 " +
+            "and h.uri in (?3) " +
+            "group by h.app, h.uri " +
+            "order by count(distinct h.ip) desc")
     List<StatsDto> findAllUniqueIp(LocalDateTime start, LocalDateTime end);
 
-    @Query(value = "select application, uri, count(remote_ip) as countIp " +
-            "from hits where uri in :uris " +
-            "and (date_time between :start and :end) " +
-            "group by application, uri order by countIp desc", nativeQuery = true)
-    List<StatsDto> findStatsByUris(LocalDateTime start, LocalDateTime end, List<String> uris);
+    @Query("select new ru.practicum.ewm.stats.collective.StatsDto(h.app, h.uri, count(h.ip)) " +
+            "from HitModel h " +
+            "where h.dateTime between ?1 and ?2 " +
+            "and h.uri in (?3) " +
+            "group by h.app, h.uri " +
+            "order by count(h.ip) desc")
+    List<StatsDto> findAllByUris(LocalDateTime start, LocalDateTime end, List<String> uris);
 
-    @Query(value = "select application, uri, count(distinct remote_ip) as countIp " +
-            "from hits where uri in :uris " +
-            "and (date_time between :start and :end) " +
-            "group by application, uri order by countIp desc", nativeQuery = true)
+    @Query("select new ru.practicum.ewm.stats.collective.StatsDto(h.app, h.uri, count(distinct h.ip)) " +
+            "from HitModel h " +
+            "where h.dateTime between ?1 and ?2 " +
+            "and h.uri in (?3) " +
+            "group by h.app, h.uri " +
+            "order by count(distinct h.ip) desc")
     List<StatsDto> findStatsByUrisUniqueIp(LocalDateTime start, LocalDateTime end, List<String> uris);
 }
