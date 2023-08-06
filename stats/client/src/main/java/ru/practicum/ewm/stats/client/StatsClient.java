@@ -34,8 +34,6 @@ public class StatsClient {
 
     public List<StatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
 
-        HttpEntity<List<StatsDto>> requestEntity = new HttpEntity<>(defaultHeaders());
-
         if (uris != null && !uris.isEmpty()) {
             String urisString = String.join(",", uris);
 
