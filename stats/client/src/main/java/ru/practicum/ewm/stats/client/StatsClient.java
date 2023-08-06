@@ -1,6 +1,5 @@
 package ru.practicum.ewm.stats.client;
 
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
