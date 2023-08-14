@@ -44,7 +44,7 @@ public class StatsService {
     }
 
     private void checkStartIsAfterEnd(LocalDateTime start, LocalDateTime end) {
-        if(start.isAfter(end)) {
+        if (start.isAfter(end)) {
             throw new ParameterException("Start date must be before end date");
         }
     }

@@ -33,9 +33,9 @@ public class StatsController {
 
     @GetMapping("/stats")
     public List<StatsDto> getStats(@RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
-                                     @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
-                                     @RequestParam(required = false) List<String> uris,
-                                     @RequestParam(required = false, defaultValue = "false") Boolean unique) {
+                                   @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
+                                   @RequestParam(required = false) List<String> uris,
+                                   @RequestParam(required = false, defaultValue = "false") Boolean unique) {
         var result = statsService.getStats(start, end, uris, unique);
         log.info("[GET /stats?start={start}&end={end}&uris={uris}&unique={unique}]. Get stats from date: {} to date: {} for uris: {} (unique: {})",
                 start, end, uris, unique);

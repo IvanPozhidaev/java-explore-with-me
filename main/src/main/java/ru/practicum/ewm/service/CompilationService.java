@@ -31,7 +31,7 @@ public class CompilationService {
 
     public CompilationDto updateCompilation(Long compId, CompilationUpdateDto compilationDto) {
         var updatedComp = compilationRepository.findById(compId)
-                .orElseThrow(() ->  new MainNotFoundException("Compilation with id=" + compId + " was not found"));
+                .orElseThrow(() -> new MainNotFoundException("Compilation with id=" + compId + " was not found"));
 
         if (compilationDto.getTitle() != null) {
             updatedComp.setTitle(compilationDto.getTitle());
