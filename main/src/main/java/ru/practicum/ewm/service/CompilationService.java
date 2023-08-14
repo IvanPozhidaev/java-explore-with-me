@@ -5,9 +5,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.ewm.converter.CompilationConverter;
 import ru.practicum.ewm.dto.CompilationDto;
-import ru.practicum.ewm.exception.MainNotFoundException;
-import ru.practicum.ewm.entity.Compilation;
 import ru.practicum.ewm.dto.CompilationUpdateDto;
+import ru.practicum.ewm.exception.MainNotFoundException;
 import ru.practicum.ewm.repository.CompilationRepository;
 import ru.practicum.ewm.util.PageHelper;
 

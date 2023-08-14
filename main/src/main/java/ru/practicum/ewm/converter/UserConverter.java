@@ -3,7 +3,6 @@ package ru.practicum.ewm.converter;
 import ru.practicum.ewm.dto.UserDto;
 import ru.practicum.ewm.entity.User;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 

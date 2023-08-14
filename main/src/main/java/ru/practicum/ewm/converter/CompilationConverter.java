@@ -4,7 +4,6 @@ import lombok.experimental.UtilityClass;
 import ru.practicum.ewm.dto.CompilationDto;
 import ru.practicum.ewm.entity.Compilation;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 

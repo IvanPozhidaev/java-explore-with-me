@@ -5,8 +5,8 @@ import org.springframework.stereotype.Service;
 import ru.practicum.ewm.stats.collective.HitDto;
 import ru.practicum.ewm.stats.collective.StatsDto;
 import ru.practicum.ewm.stats.converter.ConverterModelDto;
-import ru.practicum.ewm.stats.exception.ParameterException;
 import ru.practicum.ewm.stats.entity.Hit;
+import ru.practicum.ewm.stats.exception.ParameterException;
 import ru.practicum.ewm.stats.repository.StatsRepositoryJpa;
 
 import java.time.LocalDateTime;

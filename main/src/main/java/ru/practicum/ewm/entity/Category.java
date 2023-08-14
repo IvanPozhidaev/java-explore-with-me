@@ -1,6 +1,7 @@
 package ru.practicum.ewm.entity;
 
 import lombok.*;
+
 import javax.persistence.*;
 
 @Getter

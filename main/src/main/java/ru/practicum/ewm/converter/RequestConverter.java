@@ -5,8 +5,6 @@ import ru.practicum.ewm.entity.Event;
 import ru.practicum.ewm.entity.Request;
 import ru.practicum.ewm.entity.User;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 

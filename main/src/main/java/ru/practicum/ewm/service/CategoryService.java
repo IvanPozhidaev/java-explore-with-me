@@ -6,12 +6,10 @@ import org.springframework.stereotype.Service;
 import ru.practicum.ewm.converter.CategoryConverter;
 import ru.practicum.ewm.dto.CategoryDto;
 import ru.practicum.ewm.exception.MainNotFoundException;
-import ru.practicum.ewm.entity.Category;
 import ru.practicum.ewm.repository.CategoryRepository;
 import ru.practicum.ewm.util.PageHelper;
 
 import javax.transaction.Transactional;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
