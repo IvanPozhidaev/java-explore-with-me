@@ -5,9 +5,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.ewm.model.EventSort;
-import ru.practicum.ewm.model.dto.EventDtoFull;
-import ru.practicum.ewm.model.dto.EventShortDto;
+import ru.practicum.ewm.entity.model.EventSort;
+import ru.practicum.ewm.dto.EventDtoFull;
+import ru.practicum.ewm.dto.EventShortDto;
 import ru.practicum.ewm.service.EventService;
 
 import javax.servlet.http.HttpServletRequest;

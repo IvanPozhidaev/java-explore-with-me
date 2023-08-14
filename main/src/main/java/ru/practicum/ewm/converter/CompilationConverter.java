@@ -1,22 +1,25 @@
 package ru.practicum.ewm.converter;
 
-import ru.practicum.ewm.model.dto.CompilationDto;
-import ru.practicum.ewm.model.CompilationModel;
+import lombok.experimental.UtilityClass;
+import ru.practicum.ewm.dto.CompilationDto;
+import ru.practicum.ewm.entity.Compilation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
+@UtilityClass
 public class CompilationConverter {
 
-    public static CompilationModel convertToModel(CompilationDto dto) {
-        CompilationModel model = new CompilationModel();
+    public Compilation convertToModel(CompilationDto dto) {
+        Compilation model = new Compilation();
         model.setTitle(dto.getTitle());
         model.setPinned(dto.getPinned());
         model.setEvents(dto.getEvents());
         return model;
     }
 
-    public static CompilationDto convertToDto(CompilationModel model) {
+    public CompilationDto convertToDto(Compilation model) {
         return new CompilationDto(
                 model.getId(),
                 model.getTitle(),
@@ -25,11 +28,7 @@ public class CompilationConverter {
         );
     }
 
-    public static List<CompilationDto> mapToDto(List<CompilationModel> comps) {
-        List<CompilationDto> res = new ArrayList<>();
-        for (CompilationModel c : comps) {
-            res.add(convertToDto(c));
-        }
-        return res;
+    public List<CompilationDto> mapToDto(List<Compilation> comps) {
+        return comps.stream().map(CompilationConverter::convertToDto).collect(Collectors.toList());
     }
 }

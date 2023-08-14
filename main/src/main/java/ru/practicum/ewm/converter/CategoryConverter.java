@@ -1,32 +1,32 @@
 package ru.practicum.ewm.converter;
 
-import ru.practicum.ewm.model.dto.CategoryDto;
-import ru.practicum.ewm.model.CategoryModel;
+import lombok.experimental.UtilityClass;
+import ru.practicum.ewm.dto.CategoryDto;
+import ru.practicum.ewm.entity.Category;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
+@UtilityClass
 public class CategoryConverter {
 
-    public static CategoryModel convertToModel(CategoryDto dto) {
-        return new CategoryModel(
+    public Category convertToModel(CategoryDto dto) {
+        return new Category(
                 dto.getId(),
                 dto.getName()
         );
     }
 
-    public static CategoryDto convertToDto(CategoryModel model) {
+    public CategoryDto convertToDto(Category model) {
         return new CategoryDto(
                 model.getId(),
                 model.getName()
         );
     }
 
-    public static List<CategoryDto> mapToDto(List<CategoryModel> cats) {
-        List<CategoryDto> res = new ArrayList<>();
-        for (CategoryModel c : cats) {
-            res.add(convertToDto(c));
-        }
-        return res;
+    public List<CategoryDto> mapToDto(List<Category> cats) {
+        return cats.stream().map(CategoryConverter::convertToDto).collect(Collectors.toList());
+
     }
 }

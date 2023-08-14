@@ -3,18 +3,24 @@ package ru.practicum.ewm.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.practicum.ewm.converter.RequestConverter;
-import ru.practicum.ewm.model.dto.RequestDto;
+import ru.practicum.ewm.dto.RequestDto;
+import ru.practicum.ewm.entity.Event;
+import ru.practicum.ewm.entity.Request;
+import ru.practicum.ewm.entity.User;
 import ru.practicum.ewm.exception.MainNotFoundException;
 import ru.practicum.ewm.exception.MainParamConflictException;
-import ru.practicum.ewm.model.EventState;
-import ru.practicum.ewm.model.RequestStatus;
+import ru.practicum.ewm.entity.model.EventState;
+import ru.practicum.ewm.entity.model.RequestStatus;
 import ru.practicum.ewm.repository.EventRepository;
 import ru.practicum.ewm.repository.RequestRepository;
 import ru.practicum.ewm.repository.UserRepository;
+import ru.practicum.ewm.util.EventUtils;
 
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class RequestService {
@@ -32,59 +38,77 @@ public class RequestService {
         this.userRepository = userRepository;
     }
 
+    @Transactional
     public RequestDto addRequest(Long userId, Long eventId) {
-        var userOpt = userRepository.findById(userId);
-        if (userOpt.isEmpty()) {
-            throw new MainNotFoundException("User with id=" + userId + " was not found");
-        }
-        var eventOpt = eventRepository.findById(eventId);
-        if (eventOpt.isEmpty()) {
-            throw new MainNotFoundException("Event with id=" + eventId + " was not found");
-        }
-        var event = eventOpt.get();
-        var checkReRequest = requestRepository.checkReRequest(eventId, userId);
-        if (checkReRequest != null) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new MainNotFoundException("User with id=" + userId + " was not found"));
+
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new MainNotFoundException("Event with id=" + eventId + " was not found"));
+
+        Boolean isRequestExist = requestRepository.existsByEventIdAndRequesterId(eventId, userId);
+        if (isRequestExist) {
             throw new MainParamConflictException("Unable to add a repeat request");
         }
-        var checkInitiator = eventRepository.findByIdAndAndInitiator(eventId, userId);
-        if (checkInitiator != null) {
+
+        if (Objects.equals(event.getInitiator().getId(), userId)) {
             throw new MainParamConflictException("Initiator cannot be requester");
         }
-        if (event.getState() != EventState.PUBLISHED) {
+        if (!Objects.equals(event.getState(), EventState.PUBLISHED)) {
             throw new MainParamConflictException("Unable to participate in an unpublished event");
         }
         if (event.getParticipantLimit() > 0) {
-            var countId = event.countConfirmedRequests();
+            var countId = EventUtils.countConfirmedRequests(event);
             if (event.getParticipantLimit() <= countId) {
                 throw new MainParamConflictException("Request limit with approved status exceeded");
             }
         }
-        var created = RequestConverter.convertToModel(userId, eventId);
+
+        Request created = RequestConverter.convertToModel(user, event);
         created.setCreated(LocalDateTime.now());
+
         if (event.getRequestModeration().equals(false) || event.getParticipantLimit() == 0) {
             created.setStatus(RequestStatus.CONFIRMED);
         } else {
             created.setStatus(RequestStatus.PENDING);
         }
-        var after = requestRepository.save(created);
-        return RequestConverter.convertToDto(after);
+
+        int confirmed = event.getConfirmedRequests();
+        int limit = event.getParticipantLimit();
+
+        if (limit == 0) {
+            event.setConfirmedRequests(confirmed + 1);
+            created.setStatus(RequestStatus.CONFIRMED);
+        } else if (confirmed < limit) {
+            if(!event.getRequestModeration()) {
+                event.setConfirmedRequests(confirmed + 1);
+                created.setStatus(RequestStatus.PENDING);
+            }
+        } else {
+            throw new MainParamConflictException(String.format("There are no free places to events with id='%s'",
+                    eventId));
+        }
+
+        var savedRequest = requestRepository.save(created);
+        return RequestConverter.convertToDto(savedRequest);
     }
 
     public List<RequestDto> getRequestsInNotHisEvents(Long userId) {
-        var result = requestRepository.getRequestsInNotHisEvents(userId);
+        var result = requestRepository.findByRequesterId(userId);
         if (result.size() == 0) {
             return new ArrayList<>();
         }
         return RequestConverter.mapToDto(result);
     }
 
+    @Transactional
     public RequestDto cancelRequest(Long userId, Long requestId) {
-        var check = requestRepository.findByIdAndAndRequester(requestId, userId);
-        if (check == null) {
-            throw new MainNotFoundException("Request with id=" + requestId + " from user with id=" + userId + " was not found");
-        }
-        check.setStatus(RequestStatus.CANCELED);
-        var after = requestRepository.save(check);
-        return RequestConverter.convertToDto(after);
+        var request = requestRepository.findByIdAndRequesterId(requestId, userId)
+                .orElseThrow(() -> new MainNotFoundException(
+                        "Request with id=" + requestId + " from user with id=" + userId + " was not found"));
+
+        request.setStatus(RequestStatus.CANCELED);
+        var updatesRequest = requestRepository.save(request);
+        return RequestConverter.convertToDto(updatesRequest);
     }
 }

@@ -4,13 +4,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.ewm.converter.UserConverter;
-import ru.practicum.ewm.model.dto.UserDto;
-
-
+import ru.practicum.ewm.dto.UserDto;
 import ru.practicum.ewm.repository.UserRepository;
 import ru.practicum.ewm.util.PageHelper;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -29,20 +26,15 @@ public class UserService {
         return UserConverter.convertToDto(after);
     }
 
-    public List<UserDto> getUsers(Long[] ids, int from, int size) {
+    public List<UserDto> getUsers(List<Long> ids, int from, int size) {
         PageRequest pageRequest = PageHelper.createRequest(from, size);
         if (ids != null) {
-            var result = userRepository.findAllIds(ids, pageRequest).getContent();
-            if (result.size() == 0) {
-                return new ArrayList<>();
-            }
-            return UserConverter.mapToDto(result);
+            var result = userRepository.findAllByIdIn(ids, pageRequest).getContent();
+            return result.size() == 0 ? List.of() : UserConverter.mapToDto(result);
         }
+
         var result = userRepository.findAll(pageRequest).getContent();
-        if (result.size() == 0) {
-            return new ArrayList<>();
-        }
-        return UserConverter.mapToDto(result);
+        return result.size() == 0 ? List.of() : UserConverter.mapToDto(result);
     }
 
     public void deleteUser(Long userId) {

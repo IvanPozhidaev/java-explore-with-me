@@ -2,12 +2,12 @@ package ru.practicum.ewm.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import ru.practicum.ewm.model.LocationModel;
+import ru.practicum.ewm.entity.Location;
 
 import java.util.List;
 
 @EnableJpaRepositories
-public interface LocationRepository extends JpaRepository<LocationModel, Long> {
+public interface LocationRepository extends JpaRepository<Location, Long> {
 
-    List<LocationModel> findByLatAndLon(float lat, float lon);
+    List<Location> findByLatAndLon(float lat, float lon);
 }

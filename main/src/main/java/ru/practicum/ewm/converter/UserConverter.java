@@ -1,22 +1,23 @@
 package ru.practicum.ewm.converter;
 
-import ru.practicum.ewm.model.dto.UserDto;
-import ru.practicum.ewm.model.UserModel;
+import ru.practicum.ewm.dto.UserDto;
+import ru.practicum.ewm.entity.User;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class UserConverter {
 
-    public static UserModel convertToModel(UserDto dto) {
-        return new UserModel(
+    public static User convertToModel(UserDto dto) {
+        return new User(
                 dto.getId(),
                 dto.getEmail(),
                 dto.getName()
         );
     }
 
-    public static UserDto convertToDto(UserModel model) {
+    public static UserDto convertToDto(User model) {
         return new UserDto(
                 model.getId(),
                 model.getEmail(),
@@ -24,11 +25,7 @@ public class UserConverter {
         );
     }
 
-    public static List<UserDto> mapToDto(List<UserModel> users) {
-        List<UserDto> res = new ArrayList<>();
-        for (UserModel u : users) {
-            res.add(convertToDto(u));
-        }
-        return res;
+    public static List<UserDto> mapToDto(List<User> users) {
+        return users.stream().map(UserConverter::convertToDto).collect(Collectors.toList());
     }
 }

@@ -4,12 +4,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.ewm.converter.CategoryConverter;
-import ru.practicum.ewm.model.dto.CategoryDto;
+import ru.practicum.ewm.dto.CategoryDto;
 import ru.practicum.ewm.exception.MainNotFoundException;
-import ru.practicum.ewm.model.CategoryModel;
+import ru.practicum.ewm.entity.Category;
 import ru.practicum.ewm.repository.CategoryRepository;
 import ru.practicum.ewm.util.PageHelper;
 
+import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,12 +30,10 @@ public class CategoryService {
         return CategoryConverter.convertToDto(after);
     }
 
+    @Transactional
     public CategoryDto updateCategory(CategoryDto categoryDto, Long catId) {
-        var check = categoryRepository.findById(catId);
-        if (check.isEmpty()) {
-            throw new MainNotFoundException("Category with id=" + catId + " was not found");
-        }
-        CategoryModel updatedCat = check.get();
+        var updatedCat = categoryRepository.findById(catId)
+                .orElseThrow(() -> new MainNotFoundException("Category with id=" + catId + " was not found"));
         updatedCat.setName(categoryDto.getName());
         var afterUpdate = categoryRepository.save(updatedCat);
         return CategoryConverter.convertToDto(afterUpdate);
@@ -47,18 +46,12 @@ public class CategoryService {
     public List<CategoryDto> getCategories(int from, int size) {
         PageRequest pageRequest = PageHelper.createRequest(from, size);
         var result = categoryRepository.findAll(pageRequest).getContent();
-        if (result.size() == 0) {
-            return new ArrayList<>();
-        }
-        return CategoryConverter.mapToDto(result);
+        return result.size() == 0 ? List.of() : CategoryConverter.mapToDto(result);
     }
 
     public CategoryDto getCategoryById(Long catId) {
-        var result = categoryRepository.findById(catId);
-        if (result.isEmpty()) {
-            throw new MainNotFoundException("Category with id=" + catId + " was not found");
-        }
-
-        return CategoryConverter.convertToDto(result.get());
+        var result = categoryRepository.findById(catId)
+                .orElseThrow(() -> new MainNotFoundException("Category with id=" + catId + " was not found"));
+        return CategoryConverter.convertToDto(result);
     }
 }

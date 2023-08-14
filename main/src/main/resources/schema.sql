@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS public.events
     category_id        bigint,
     initiator_id       bigint,
     location_id        bigint,
+    confirmed_requests int,
     CONSTRAINT events_pkey PRIMARY KEY (id),
     CONSTRAINT events_category_id_fkey FOREIGN KEY (category_id)
     REFERENCES public.categories (id),

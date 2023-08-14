@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.ewm.model.dto.UserDto;
+import ru.practicum.ewm.dto.UserDto;
 import ru.practicum.ewm.service.UserService;
 
 import javax.validation.Valid;
@@ -33,7 +33,7 @@ public class AdminUserController {
     }
 
     @GetMapping
-    public List<UserDto> getUsers(@RequestParam(required = false) Long[] ids,
+    public List<UserDto> getUsers(@RequestParam(required = false) List<Long> ids,
                                   @RequestParam(required = false, defaultValue = "0") int from,
                                   @RequestParam(required = false, defaultValue = "10") int size) {
         var users = userService.getUsers(ids, from, size);

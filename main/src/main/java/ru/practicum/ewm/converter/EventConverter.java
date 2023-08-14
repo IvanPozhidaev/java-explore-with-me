@@ -1,19 +1,23 @@
 package ru.practicum.ewm.converter;
 
-import ru.practicum.ewm.model.dto.EventDto;
-import ru.practicum.ewm.model.dto.EventShortDto;
-import ru.practicum.ewm.model.dto.EventDtoFull;
-import ru.practicum.ewm.model.EventModel;
-import ru.practicum.ewm.model.UserModel;
-import ru.practicum.ewm.model.dto.LocationDto;
+import lombok.experimental.UtilityClass;
+import ru.practicum.ewm.dto.EventDto;
+import ru.practicum.ewm.dto.EventDtoFull;
+import ru.practicum.ewm.dto.EventShortDto;
+import ru.practicum.ewm.dto.LocationDto;
+import ru.practicum.ewm.entity.Event;
+import ru.practicum.ewm.entity.User;
+import ru.practicum.ewm.util.EventUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
+@UtilityClass
 public class EventConverter {
 
-    public static EventModel convertToModel(UserModel user, EventDto dto) {
-        EventModel model = new EventModel();
+    public Event convertToModel(User user, EventDto dto) {
+        Event model = new Event();
         model.setTitle(dto.getTitle());
         model.setDescription(dto.getDescription());
         model.setAnnotation(dto.getAnnotation());
@@ -25,7 +29,7 @@ public class EventConverter {
         return model;
     }
 
-    public static EventShortDto convertToShortDto(EventModel model) {
+    public EventShortDto convertToShortDto(Event model) {
         EventShortDto dto = new EventShortDto();
         dto.setId(model.getId());
         dto.setTitle(model.getTitle());
@@ -33,21 +37,21 @@ public class EventConverter {
         dto.setAnnotation(model.getAnnotation());
         dto.setCategory(CategoryConverter.convertToDto(model.getCategory()));
         dto.setInitiator(UserConverter.convertToDto(model.getInitiator()));
-        dto.setConfirmedRequests(model.countConfirmedRequests());
+        dto.setConfirmedRequests(EventUtils.countConfirmedRequests(model));
         dto.setEventDate(model.getEventDate());
         dto.setPaid(model.getPaid());
         return dto;
     }
 
-    public static List<EventShortDto> mapToShortDto(List<EventModel> events) {
+    public List<EventShortDto> mapToShortDto(List<Event> events) {
         List<EventShortDto> res = new ArrayList<>();
-        for (EventModel e : events) {
+        for (Event e : events) {
             res.add(convertToShortDto(e));
         }
         return res;
     }
 
-    public static EventDtoFull convertToDtoFull(EventModel model) {
+    public EventDtoFull convertToDtoFull(Event model) {
         EventDtoFull dtoFull = new EventDtoFull();
         dtoFull.setId(model.getId());
         dtoFull.setTitle(model.getTitle());
@@ -59,7 +63,7 @@ public class EventConverter {
         dtoFull.setRequestModeration(model.getRequestModeration());
         dtoFull.setPaid(model.getPaid());
         dtoFull.setCategory(CategoryConverter.convertToDto(model.getCategory()));
-        dtoFull.setConfirmedRequests(model.countConfirmedRequests());
+        dtoFull.setConfirmedRequests(EventUtils.countConfirmedRequests(model));
         dtoFull.setCreatedOn(model.getCreatedOn());
         dtoFull.setInitiator(UserConverter.convertToDto(model.getInitiator()));
         dtoFull.setPublishedOn(model.getPublishedOn());
@@ -67,11 +71,7 @@ public class EventConverter {
         return dtoFull;
     }
 
-    public static List<EventDtoFull> mapToDtoFull(List<EventModel> events) {
-        List<EventDtoFull> resFull = new ArrayList<>();
-        for (EventModel e : events) {
-            resFull.add(convertToDtoFull(e));
-        }
-        return resFull;
+    public List<EventDtoFull> mapToDtoFull(List<Event> events) {
+        return events.stream().map(EventConverter::convertToDtoFull).collect(Collectors.toList());
     }
 }

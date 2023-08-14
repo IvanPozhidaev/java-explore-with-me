@@ -5,10 +5,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import ru.practicum.ewm.model.CompilationModel;
+import ru.practicum.ewm.entity.Compilation;
 
 @EnableJpaRepositories
-public interface CompilationRepository extends JpaRepository<CompilationModel, Long> {
+public interface CompilationRepository extends JpaRepository<Compilation, Long> {
 
-    Page<CompilationModel> findAllByPinned(Boolean pinned, PageRequest pageRequest);
+    Page<Compilation> findAllByPinned(Boolean pinned, PageRequest pageRequest);
 }
