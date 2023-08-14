@@ -80,7 +80,7 @@ public class RequestService {
             event.setConfirmedRequests(confirmed + 1);
             created.setStatus(RequestStatus.CONFIRMED);
         } else if (confirmed < limit) {
-            if(!event.getRequestModeration()) {
+            if (!event.getRequestModeration()) {
                 event.setConfirmedRequests(confirmed + 1);
                 created.setStatus(RequestStatus.PENDING);
             }
