@@ -26,7 +26,7 @@ public class PrivateEventController {
 
     @PostMapping
     @ResponseStatus(code = HttpStatus.CREATED)
-    public EventDtoFull addEvent(@PathVariable Long userId,
+    public EventFullDto addEvent(@PathVariable Long userId,
                                  @Valid @RequestBody EventDto eventDto) {
         var addedEvent = eventService.addEvent(userId, eventDto);
         log.info("[POST /users/{userId}/events] (Private). " +
@@ -45,14 +45,14 @@ public class PrivateEventController {
     }
 
     @GetMapping("/{eventId}")
-    public EventDtoFull getEventByIdPrivate(@PathVariable Long userId, @PathVariable Long eventId) {
+    public EventFullDto getEventByIdPrivate(@PathVariable Long userId, @PathVariable Long eventId) {
         var eventById = eventService.getEventByIdPrivate(userId, eventId);
         log.info("[GET /users/{userId}/events/{eventId}] (Private). Get event (id): {} from user (id): {}", eventId, userId);
         return eventById;
     }
 
     @PatchMapping("/{eventId}")
-    public EventDtoFull updateEvent(@PathVariable Long userId,
+    public EventFullDto updateEvent(@PathVariable Long userId,
                                     @PathVariable Long eventId,
                                     @Valid @RequestBody EventUpdateDto eventDto) {
         var updatedEvent = eventService.updateEventPrivate(userId, eventId, eventDto);

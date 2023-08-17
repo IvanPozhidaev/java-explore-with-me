@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
 @NoArgsConstructor
-public class EventDtoFull extends EventShortDto {
+public class EventFullDto extends EventShortDto {
 
     private LocationDto location;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

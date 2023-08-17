@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.ewm.dto.EventDtoFull;
+import ru.practicum.ewm.dto.EventFullDto;
 import ru.practicum.ewm.dto.EventUpdateDto;
 import ru.practicum.ewm.entity.model.EventState;
 import ru.practicum.ewm.service.EventService;
@@ -28,7 +28,7 @@ public class AdminEventController {
     }
 
     @GetMapping
-    public List<EventDtoFull> searchEventsByAdmin(@RequestParam(required = false) Long[] users,
+    public List<EventFullDto> searchEventsByAdmin(@RequestParam(required = false) Long[] users,
                                                   @RequestParam(required = false) EventState states,
                                                   @RequestParam(required = false) Long[] categories,
                                                   @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeStart,
@@ -51,7 +51,7 @@ public class AdminEventController {
     }
 
     @PatchMapping("/{eventId}")
-    public EventDtoFull updateEventByAdmin(@PathVariable Long eventId,
+    public EventFullDto updateEventByAdmin(@PathVariable Long eventId,
                                            @Valid @RequestBody EventUpdateDto eventDto) {
         log.info("eventId: {}, eventDto: {}, eventService: {}", eventId, eventDto, eventService);
         var updatedEventByAdmin = eventService.updateEventByAdmin(eventId, eventDto);

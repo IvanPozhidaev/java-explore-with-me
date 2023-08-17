@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.ewm.dto.EventDtoFull;
+import ru.practicum.ewm.dto.EventFullDto;
 import ru.practicum.ewm.dto.EventShortDto;
 import ru.practicum.ewm.entity.model.EventSort;
 import ru.practicum.ewm.service.EventService;
@@ -56,7 +56,7 @@ public class PublicEventController {
     }
 
     @GetMapping("/{id}")
-    public EventDtoFull getEventByIdPublic(@PathVariable Long id, HttpServletRequest request) {
+    public EventFullDto getEventByIdPublic(@PathVariable Long id, HttpServletRequest request) {
         var eventById = eventService.getEventByIdPublic(id, request);
         log.info("[GET /events/{id}] (Public). Get event (id): {}, from client ip: {}, endpoint path: {}",
                 id, request.getRemoteAddr(), request.getRequestURI());

@@ -64,7 +64,7 @@ public class EventService {
         this.categoryService = categoryService;
     }
 
-    public EventDtoFull addEvent(Long userId, EventDto eventDto) {
+    public EventFullDto addEvent(Long userId, EventDto eventDto) {
         var user = userRepository.findById(userId)
                 .orElseThrow(() -> new MainNotFoundException("User with id=" + userId + " was not found"));
 
@@ -105,7 +105,7 @@ public class EventService {
         return EventConverter.mapToShortDto(result);
     }
 
-    public EventDtoFull getEventByIdPrivate(Long userId, Long eventId) {
+    public EventFullDto getEventByIdPrivate(Long userId, Long eventId) {
         var foundEvent = eventRepository.findByIdAndInitiatorId(eventId, userId)
                 .orElseThrow(() -> new MainNotFoundException(
                         "Event with id=" + eventId + " and added by user id=" + userId + " was not found"));
@@ -114,7 +114,7 @@ public class EventService {
         return result;
     }
 
-    public EventDtoFull updateEventPrivate(Long userId, Long eventId, EventUpdateDto eventDto) {
+    public EventFullDto updateEventPrivate(Long userId, Long eventId, EventUpdateDto eventDto) {
         var eventToUpd = eventRepository.findByIdAndInitiatorId(eventId, userId)
                 .orElseThrow(() -> new MainNotFoundException(
                         "Event with id=" + eventId + " and added by user id=" + userId + " was not found"));
@@ -248,7 +248,7 @@ public class EventService {
         return afterUpdateStatus;
     }
 
-    public List<EventDtoFull> searchEventsAdmin(
+    public List<EventFullDto> searchEventsAdmin(
             Long[] users,
             EventState states,
             Long[] categories,
@@ -289,7 +289,7 @@ public class EventService {
         return result;
     }
 
-    public EventDtoFull updateEventByAdmin(Long eventId, EventUpdateDto eventDto) {
+    public EventFullDto updateEventByAdmin(Long eventId, EventUpdateDto eventDto) {
         var check = eventRepository.findById(eventId);
         if (check.isEmpty()) {
             throw new MainNotFoundException("Event with id=" + eventId + " was not found");
@@ -433,7 +433,7 @@ public class EventService {
         }
     }
 
-    public EventDtoFull getEventByIdPublic(Long id, HttpServletRequest request) {
+    public EventFullDto getEventByIdPublic(Long id, HttpServletRequest request) {
         Event foundEvent = eventRepository.findByIdAndState(id, EventState.PUBLISHED)
                 .orElseThrow(() -> new MainNotFoundException("Event with id=" + id + " was not found"));
 

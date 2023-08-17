@@ -2,7 +2,7 @@ package ru.practicum.ewm.converter;
 
 import lombok.experimental.UtilityClass;
 import ru.practicum.ewm.dto.EventDto;
-import ru.practicum.ewm.dto.EventDtoFull;
+import ru.practicum.ewm.dto.EventFullDto;
 import ru.practicum.ewm.dto.EventShortDto;
 import ru.practicum.ewm.dto.LocationDto;
 import ru.practicum.ewm.entity.Event;
@@ -51,8 +51,8 @@ public class EventConverter {
         return res;
     }
 
-    public EventDtoFull convertToDtoFull(Event model) {
-        EventDtoFull dtoFull = new EventDtoFull();
+    public EventFullDto convertToDtoFull(Event model) {
+        EventFullDto dtoFull = new EventFullDto();
         dtoFull.setId(model.getId());
         dtoFull.setTitle(model.getTitle());
         dtoFull.setDescription(model.getDescription());
@@ -71,7 +71,7 @@ public class EventConverter {
         return dtoFull;
     }
 
-    public List<EventDtoFull> mapToDtoFull(List<Event> events) {
+    public List<EventFullDto> mapToDtoFull(List<Event> events) {
         return events.stream().map(EventConverter::convertToDtoFull).collect(Collectors.toList());
     }
 }
