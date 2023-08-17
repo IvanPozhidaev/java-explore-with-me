@@ -44,8 +44,7 @@ public class AdminEventController {
                 from,
                 size
         );
-        log.info("[GET /admin/events?users={users}&states={states}&categories={categories}&rangeStart={rangeStart}&rangeEnd={rangeEnd}&from={from}&size={size}] (Admin). " +
-                        "Search list events (model) with param users: {}, states: {}, categories: {}, rangeStart: {}, rangeEnd: {}, from: {}, size: {}",
+        log.info("Search list events (model) with param users: {}, states: {}, categories: {}, rangeStart: {}, rangeEnd: {}, from: {}, size: {}",
                 users, states, categories, rangeStart, rangeEnd, from, size);
         return foundedEvents;
     }
