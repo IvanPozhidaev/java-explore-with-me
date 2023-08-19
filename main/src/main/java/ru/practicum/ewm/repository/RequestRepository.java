@@ -1,13 +1,13 @@
 package ru.practicum.ewm.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import ru.practicum.ewm.entity.Request;
 
 import java.util.List;
 import java.util.Optional;
 
-@EnableJpaRepositories
 public interface RequestRepository extends JpaRepository<Request, Long> {
 
     List<Request> findByRequesterId(Long userId);
@@ -17,4 +17,9 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
     Boolean existsByEventIdAndRequesterId(Long eventId, Long userId);
 
     List<Request> findByEventId(Long eventId);
+
+    @Query(value = "select  count(r.id) from Request r where r.event.id =:eventId and (r.status = 'CONFIRMED' or r.status = 'PENDING')")
+    Integer countByEventId(@Param(value = "eventId") Long eventId);
+
+    List<Request> findByEventIdIn(List<Long> ids);
 }

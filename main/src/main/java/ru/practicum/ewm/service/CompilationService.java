@@ -1,37 +1,47 @@
 package ru.practicum.ewm.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.ewm.converter.CompilationConverter;
 import ru.practicum.ewm.dto.CompilationDto;
+import ru.practicum.ewm.dto.CompilationNewDto;
 import ru.practicum.ewm.dto.CompilationUpdateDto;
+import ru.practicum.ewm.entity.Event;
 import ru.practicum.ewm.exception.MainNotFoundException;
 import ru.practicum.ewm.repository.CompilationRepository;
+import ru.practicum.ewm.repository.EventRepository;
 import ru.practicum.ewm.util.PageHelper;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 @Service
+@RequiredArgsConstructor
 public class CompilationService {
-
     private final CompilationRepository compilationRepository;
+    private final EventRepository eventRepository;
 
-    @Autowired
-    public CompilationService(CompilationRepository compilationRepository) {
-        this.compilationRepository = compilationRepository;
-    }
-
-    public CompilationDto addCompilation(CompilationDto compilationDto) {
+    public CompilationDto addCompilation(CompilationNewDto compilationDto) {
         var create = CompilationConverter.convertToModel(compilationDto);
+
+        if (!Objects.nonNull(compilationDto.getPinned())) {
+            create.setPinned(false);
+        }
+
+        if (Objects.nonNull(compilationDto.getEvents())) {
+            List<Event> getEvent = eventRepository.findAllById(compilationDto.getEvents());
+            create.setEvents(getEvent);
+        }
         var after = compilationRepository.save(create);
         return CompilationConverter.convertToDto(after);
     }
 
     public CompilationDto updateCompilation(Long compId, CompilationUpdateDto compilationDto) {
         var updatedComp = compilationRepository.findById(compId)
-                .orElseThrow(() -> new MainNotFoundException("Compilation with id=" + compId + " was not found"));
+                .orElseThrow(() -> new MainNotFoundException(String.format(
+                        "Compilation with id=%s was not found", compId)));
 
         if (compilationDto.getTitle() != null) {
             updatedComp.setTitle(compilationDto.getTitle());
@@ -40,8 +50,10 @@ public class CompilationService {
             updatedComp.setPinned(compilationDto.getPinned());
         }
         if (compilationDto.getEvents() != null) {
-            updatedComp.setEvents(compilationDto.getEvents());
+            var events = eventRepository.findAllById(compilationDto.getEvents());
+            updatedComp.setEvents(events);
         }
+
         var after = compilationRepository.save(updatedComp);
         return CompilationConverter.convertToDto(after);
     }
@@ -52,29 +64,15 @@ public class CompilationService {
 
     public List<CompilationDto> getCompilations(Boolean pinned, int from, int size) {
         PageRequest pageRequest = PageHelper.createRequest(from, size);
-        if (pinned != null) {
-            if (pinned) {
-                var compilationPinned = compilationRepository.findAllByPinned(true, pageRequest).getContent();
-                if (compilationPinned.size() == 0) {
-                    return new ArrayList<>();
-                }
-                return CompilationConverter.mapToDto(compilationPinned);
-            } else {
-                var compilationNotPinned = compilationRepository.findAllByPinned(false, pageRequest).getContent();
-                if (compilationNotPinned.size() == 0) {
-                    return new ArrayList<>();
-                }
-                return CompilationConverter.mapToDto(compilationNotPinned);
-            }
-        } else {
-            var allComp = compilationRepository.findAll(pageRequest).getContent();
-            return CompilationConverter.mapToDto(allComp);
-        }
+        var result = compilationRepository.findAllByPinned(pinned, pageRequest);
+
+        return result.size() == 0 ? Collections.emptyList() : CompilationConverter.mapToDto(result);
     }
 
     public CompilationDto getCompilationsById(Long compId) {
-        var result = compilationRepository.findById(compId)
-                .orElseThrow(() -> new MainNotFoundException("Compilation with id=" + compId + " was not found"));
+        var result = compilationRepository.findById(compId).orElseThrow(() ->
+                new MainNotFoundException(String.format("Compilation with id=%s was not found", compId)));
+
         return CompilationConverter.convertToDto(result);
     }
 }

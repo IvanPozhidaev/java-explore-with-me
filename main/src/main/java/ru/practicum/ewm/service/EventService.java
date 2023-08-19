@@ -2,8 +2,8 @@ package ru.practicum.ewm.service;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -28,20 +28,17 @@ import ru.practicum.ewm.stats.collective.StatsDto;
 import ru.practicum.ewm.util.EventUtils;
 import ru.practicum.ewm.util.PageHelper;
 
-import javax.servlet.http.HttpServletRequest;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class EventService {
-
+    private static final Integer HOURS_BEFORE_START_EVENT_ADMIN = 1;
+    private static final Integer HOURS_BEFORE_START_EVENT_USER = 2;
     private final EventRepository eventRepository;
     private final RequestRepository requestRepository;
     private final UserRepository userRepository;
@@ -49,29 +46,14 @@ public class EventService {
     private final StatsClient statsClient;
     private final CategoryService categoryService;
 
-    @Autowired
-    public EventService(EventRepository eventRepository,
-                        UserRepository userRepository,
-                        RequestRepository requestRepository,
-                        LocationRepository locationRepository,
-                        StatsClient statsClient,
-                        CategoryService categoryService) {
-        this.eventRepository = eventRepository;
-        this.requestRepository = requestRepository;
-        this.userRepository = userRepository;
-        this.locationRepository = locationRepository;
-        this.statsClient = statsClient;
-        this.categoryService = categoryService;
-    }
-
     public EventFullDto addEvent(Long userId, EventDto eventDto) {
         var user = userRepository.findById(userId)
-                .orElseThrow(() -> new MainNotFoundException("User with id=" + userId + " was not found"));
+                .orElseThrow(() -> new MainNotFoundException(String.format("User with id=%s was not found", userId)));
 
-        var dateTimeNow = LocalDateTime.now();
-        Duration duration = Duration.between(dateTimeNow, eventDto.getEventDate());
-        if (duration.toSeconds() <= 7200) {
-            throw new MainParamConflictException("Event date must be not earlier than two hours later");
+        var minStartDate = LocalDateTime.now().plusHours(HOURS_BEFORE_START_EVENT_USER);
+        if (eventDto.getEventDate().isBefore(minStartDate)) {
+            throw new MainParamConflictException(String.format("Event date must be not earlier than %s hours later",
+                    HOURS_BEFORE_START_EVENT_USER));
         }
 
         var createdEvent = EventConverter.convertToModel(user, eventDto);
@@ -79,7 +61,6 @@ public class EventService {
         createdEvent.setCategory(category);
         createdEvent.setCreatedOn(LocalDateTime.now());
         createdEvent.setState(EventState.PENDING);
-        createdEvent.setConfirmedRequests(0);
 
         var check = locationRepository.findByLatAndLon(eventDto.getLocation().getLat(), eventDto.getLocation().getLon());
         if (check.size() == 0) {
@@ -99,16 +80,14 @@ public class EventService {
     public List<EventShortDto> getAllEventsByInitiatorPrivate(Long userId, int from, int size) {
         PageRequest pageRequest = PageHelper.createRequest(from, size);
         var result = eventRepository.findAllByInitiatorId(userId, pageRequest).getContent();
-        if (result.size() == 0) {
-            return new ArrayList<>();
-        }
-        return EventConverter.mapToShortDto(result);
+        return result.size() == 0 ? Collections.emptyList() : EventConverter.mapToShortDto(result);
     }
 
     public EventFullDto getEventByIdPrivate(Long userId, Long eventId) {
         var foundEvent = eventRepository.findByIdAndInitiatorId(eventId, userId)
-                .orElseThrow(() -> new MainNotFoundException(
-                        "Event with id=" + eventId + " and added by user id=" + userId + " was not found"));
+                .orElseThrow(() -> new MainNotFoundException(String.format(
+                        "Event with id=%s and added by user id=%s was not found", eventId, userId)));
+
         var result = EventConverter.convertToDtoFull(foundEvent);
         result.setViews(getViews(foundEvent));
         return result;
@@ -116,16 +95,18 @@ public class EventService {
 
     public EventFullDto updateEventPrivate(Long userId, Long eventId, EventUpdateDto eventDto) {
         var eventToUpd = eventRepository.findByIdAndInitiatorId(eventId, userId)
-                .orElseThrow(() -> new MainNotFoundException(
-                        "Event with id=" + eventId + " and added by user id=" + userId + " was not found"));
+                .orElseThrow(() -> new MainNotFoundException(String.format(
+                        "Event with id=%s and added by user id=%s was not found", eventId, userId)));
 
         if (eventToUpd.getState().equals(EventState.PUBLISHED)) {
             throw new MainParamConflictException("Updated event must be not published");
         }
-        var dateTimeNow = LocalDateTime.now();
+
         if (eventDto.getEventDate() != null) {
-            if (eventDto.getEventDate().isBefore(dateTimeNow) || Duration.between(dateTimeNow, eventDto.getEventDate()).toSeconds() <= 7200) {
-                throw new MainParamConflictException("Event date must be not earlier than two hours later");
+            var minStartDate = LocalDateTime.now().plusHours(HOURS_BEFORE_START_EVENT_USER);
+            if (eventDto.getEventDate().isBefore(minStartDate)) {
+                throw new MainParamConflictException(String.format("Event date must be not earlier than %s hours later",
+                        HOURS_BEFORE_START_EVENT_USER));
             }
             eventToUpd.setEventDate(eventDto.getEventDate());
         }
@@ -183,10 +164,10 @@ public class EventService {
     }
 
     public List<RequestDto> getEventRequests(Long userId, Long eventId) {
-        var check = eventRepository.findByIdAndInitiatorId(eventId, userId);
-        if (check == null) {
-            throw new MainNotFoundException("Event with id=" + eventId + " and added by user id=" + userId + " was not found");
-        }
+        eventRepository.findByIdAndInitiatorId(eventId, userId).orElseThrow(() ->
+                new MainNotFoundException(String.format(
+                        "Event with id=%s and added by user id=%s was not found", eventId, userId)));
+
         var listRequests = requestRepository.findByEventId(eventId);
         return RequestConverter.mapToDto(listRequests);
     }
@@ -194,49 +175,53 @@ public class EventService {
     public RequestUpdateResultDto updateStatusRequestsForEvent(Long userId, Long eventId, RequestUpdateDto requestDto) {
         var event = eventRepository.findByIdAndInitiatorId(eventId, userId)
                 .orElseThrow(() -> new MainNotFoundException(
-                        "Event with id=" + eventId + " and added by user id=" + userId + " was not found"));
+                        String.format("Event with id=%s and added by user id=%s was not found", eventId, userId)));
 
-        if (event.getConfirmedRequests() >= event.getParticipantLimit()) {
-            throw new MainParameterException("The limit of participation in the event has been reached");
+        long confirmedRequests = getCountConfirmedRequestsByEvent(event);
+        if (confirmedRequests >= event.getParticipantLimit()) {
+            throw new MainParamConflictException("The limit of participation in the event has been reached");
         }
 
         RequestUpdateResultDto afterUpdateStatus = new RequestUpdateResultDto();
-        var allRequests = event.getAllRequests().stream()
+
+        var allRequests = requestRepository.findAllById(requestDto.getRequestIds()).stream()
                 .collect(Collectors.toMap(Request::getId, i -> i));
+
         var selectedRequests = requestDto.getRequestIds()
                 .stream()
                 .map(allRequests::get)
                 .collect(Collectors.toList());
+
         if (selectedRequests.stream().anyMatch(Objects::isNull)) {
             throw new MainParameterException("Request not found for this event");
         }
+
         boolean check = selectedRequests.stream()
                 .anyMatch(r -> !Objects.equals(r.getStatus(), RequestStatus.PENDING));
         if (check) {
             throw new MainParamConflictException("Request must have status PENDING");
         }
+
         if (event.getRequestModeration().equals(true) || event.getParticipantLimit() != 0) {
             long confReq = EventUtils.countConfirmedRequests(event);
-            for (Request r : selectedRequests) {
+
+            for (Request request : selectedRequests) {
                 if (event.getParticipantLimit() > confReq) {
                     if (requestDto.getStatus().equals(RequestUpdateStatus.CONFIRMED)) {
-                        r.setStatus(RequestStatus.CONFIRMED);
+                        request.setStatus(RequestStatus.CONFIRMED);
                         confReq++;
                         if (event.getParticipantLimit() == confReq) {
                             for (Request rm : event.getAllRequests()) {
                                 if (rm.getStatus().equals(RequestStatus.PENDING)) {
                                     rm.setStatus(RequestStatus.REJECTED);
-                                    requestRepository.save(rm);
                                 }
                             }
                         }
-                        var rSaved = requestRepository.save(r);
-                        afterUpdateStatus.getConfirmedRequests().add(RequestConverter.convertToDto(rSaved));
+                        afterUpdateStatus.getConfirmedRequests().add(RequestConverter.convertToDto(request));
                     }
                     if (requestDto.getStatus().equals(RequestUpdateStatus.REJECTED)) {
-                        r.setStatus(RequestStatus.REJECTED);
-                        var rSaved = requestRepository.save(r);
-                        afterUpdateStatus.getRejectedRequests().add(RequestConverter.convertToDto(rSaved));
+                        request.setStatus(RequestStatus.REJECTED);
+                        afterUpdateStatus.getRejectedRequests().add(RequestConverter.convertToDto(request));
                     }
                 } else {
                     if (requestDto.getStatus().equals(RequestUpdateStatus.CONFIRMED)) {
@@ -245,18 +230,21 @@ public class EventService {
                 }
             }
         }
+        requestRepository.saveAll(selectedRequests);
+        eventRepository.save(event);
         return afterUpdateStatus;
     }
 
-    public List<EventFullDto> searchEventsAdmin(
-            Long[] users,
-            EventState states,
-            Long[] categories,
-            LocalDateTime rangeStart,
-            LocalDateTime rangeEnd,
-            int from,
-            int size
-    ) {
+    public long getCountConfirmedRequestsByEvent(Event event) {
+        List<Request> requests = requestRepository.findByEventId(event.getId());
+        return !event.getRequestModeration()
+                ? requests.stream().filter(request -> request.getStatus().equals(RequestStatus.CONFIRMED) ||
+                request.getStatus().equals(RequestStatus.PENDING)).count()
+                : requests.stream().filter(request -> request.getStatus().equals(RequestStatus.CONFIRMED)).count();
+    }
+
+    public List<EventFullDto> searchEventsAdmin(Long[] users, List<EventState> states, Long[] categories,
+                                                LocalDateTime rangeStart, LocalDateTime rangeEnd, int from, int size) {
         PageRequest pageRequest = PageHelper.createRequest(from, size);
         QEvent qModelAdmin = QEvent.event;
         BooleanBuilder predicateAdmin = new BooleanBuilder();
@@ -275,30 +263,41 @@ public class EventService {
         if (rangeEnd != null) {
             predicateAdmin.and(qModelAdmin.eventDate.before(rangeEnd));
         }
-        List<Event> foundEventsAdmin = new ArrayList<>();
-        eventRepository.findAll(predicateAdmin).forEach(foundEventsAdmin::add);
-        if (foundEventsAdmin.size() == 0) {
-            return new ArrayList<>();
+
+        List<Event> foundEventsAdmin = eventRepository.findAll(predicateAdmin, pageRequest).toList();
+
+        List<Request> requestCountDtos = requestRepository.findByEventIdIn(foundEventsAdmin.stream().map(Event::getId).collect(Collectors.toList()));
+
+        Map<Long, Long> collect = requestCountDtos.stream()
+                .filter(request -> request.getStatus().equals(RequestStatus.CONFIRMED))
+                .collect(Collectors.groupingBy(request -> request.getEvent().getId()))
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> Long.valueOf(e.getValue().size())));
+
+        if (!foundEventsAdmin.isEmpty()) {
+            var result = EventConverter.mapToDtoFull(foundEventsAdmin);
+            setViewsForListShortDto(result);
+
+            result.forEach(eventFullDto -> {
+                Long count = collect.get(eventFullDto.getId());
+                eventFullDto.setConfirmedRequests(Objects.requireNonNullElse(count, 0L));
+            });
+            return result;
         }
-        List<Event> pageList = foundEventsAdmin.stream()
-                .skip(pageRequest.getOffset())
-                .limit(pageRequest.getPageSize())
-                .collect(Collectors.toList());
-        var result = EventConverter.mapToDtoFull(pageList);
-        setViewsForListShortDto(result);
-        return result;
+
+        return Collections.emptyList();
     }
 
     public EventFullDto updateEventByAdmin(Long eventId, EventUpdateDto eventDto) {
-        var check = eventRepository.findById(eventId);
-        if (check.isEmpty()) {
-            throw new MainNotFoundException("Event with id=" + eventId + " was not found");
-        }
-        var eventToUpdAdmin = check.get();
-        var dateTimeNow = LocalDateTime.now();
+        var eventToUpdAdmin = eventRepository.findById(eventId).orElseThrow(() ->
+                new MainNotFoundException(String.format("Event with id=%s was not found", eventId)));
+
         if (eventDto.getEventDate() != null) {
-            if (eventDto.getEventDate().isBefore(dateTimeNow) || Duration.between(dateTimeNow, eventDto.getEventDate()).toSeconds() <= 7200) {
-                throw new MainParamConflictException("Event date must be not earlier than two hours later");
+            var minStartDate = LocalDateTime.now().plusHours(HOURS_BEFORE_START_EVENT_ADMIN);
+            if (eventDto.getEventDate().isBefore(minStartDate)) {
+                throw new MainParamConflictException(String.format("Event date must be not earlier than %s hours later",
+                        HOURS_BEFORE_START_EVENT_ADMIN));
             }
             eventDto.setEventDate(eventDto.getEventDate());
         }
@@ -342,8 +341,11 @@ public class EventService {
                     throw new MainParamConflictException("Cannot publish event because it's not in the pending state");
                 }
                 var datePublish = LocalDateTime.now();
-                if (eventToUpdAdmin.getEventDate().isBefore(datePublish) || Duration.between(datePublish, eventToUpdAdmin.getEventDate()).toSeconds() <= 3600) {
-                    throw new MainParamConflictException("Event date must be not earlier than one hour before published");
+                var minStartDate = datePublish.plusHours(HOURS_BEFORE_START_EVENT_ADMIN);
+                if (eventToUpdAdmin.getEventDate().isBefore(minStartDate)) {
+                    throw new MainParamConflictException(
+                            String.format("Event date must be not earlier than %s hour before published",
+                                    HOURS_BEFORE_START_EVENT_ADMIN));
                 }
                 eventToUpdAdmin.setState(EventState.PUBLISHED);
                 eventToUpdAdmin.setPublishedOn(datePublish);
@@ -360,85 +362,81 @@ public class EventService {
         return EventConverter.convertToDtoFull(after);
     }
 
-    public List<EventShortDto> getEventsPublic(
-            String text,
-            Long[] categories,
-            Boolean paid,
-            LocalDateTime rangeStart,
-            LocalDateTime rangeEnd,
-            Boolean onlyAvailable,
-            EventSort sort,
-            int from,
-            int size,
-            HttpServletRequest request
-    ) {
-        PageRequest pageRequest = PageHelper.createRequest(from, size);
+    public List<EventShortDto> getEventsPublic(EventSearchDto request, String ip, String uri) {
+        PageRequest pageRequest = PageHelper.createRequest(request.getFrom(), request.getSize());
         var dateTimeNow = LocalDateTime.now();
-        if (rangeStart == null) {
-            rangeStart = dateTimeNow;
+
+        if (request.getRangeStart() == null) {
+            request.setRangeStart(dateTimeNow);
         }
 
         QEvent qModel = QEvent.event;
-        BooleanExpression predicatePublic = qModel.eventDate.after(rangeStart).and(qModel.state.eq(EventState.PUBLISHED));
-        if (rangeEnd != null) {
-            if (rangeStart.isAfter(rangeEnd)) {
+        BooleanExpression predicatePublic = qModel.eventDate.after(request.getRangeStart()).and(qModel.state.eq(EventState.PUBLISHED));
+        if (request.getRangeEnd() != null) {
+            if (request.getRangeStart().isAfter(request.getRangeEnd())) {
                 throw new MainParameterException("Incorrect time");
             }
-            predicatePublic = predicatePublic.and(qModel.eventDate.before(rangeEnd));
+            predicatePublic = predicatePublic.and(qModel.eventDate.before(request.getRangeEnd()));
         }
-        if (text != null) {
-            predicatePublic = predicatePublic.and(qModel.annotation.containsIgnoreCase(text).or(qModel.description.containsIgnoreCase(text)));
+        if (request.getText() != null) {
+            predicatePublic = predicatePublic
+                    .and(qModel.annotation.containsIgnoreCase(request.getText())
+                            .or(qModel.description.containsIgnoreCase(request.getText())));
         }
-        if (categories != null) {
-            predicatePublic = predicatePublic.and(qModel.category.id.in(categories));
+        if (request.getCategories() != null) {
+            predicatePublic = predicatePublic.and(qModel.category.id.in(request.getCategories()));
         }
-        if (paid != null) {
-            predicatePublic = predicatePublic.and(qModel.paid.eq(paid));
+        if (request.getPaid() != null) {
+            predicatePublic = predicatePublic.and(qModel.paid.eq(request.getPaid()));
         }
+
         List<Event> foundEvents = new ArrayList<>();
         eventRepository.findAll(predicatePublic).forEach(foundEvents::add);
-        if (onlyAvailable) {
+        if (request.getOnlyAvailable()) {
             foundEvents = foundEvents.stream()
                     .filter(e -> EventUtils.countConfirmedRequests(e) < e.getParticipantLimit())
                     .collect(Collectors.toList());
         }
-        if (foundEvents.size() == 0) {
-            return new ArrayList<>();
-        } else {
-            List<Event> eventsPageAndSort = new ArrayList<>();
-            if (sort == null) {
-                eventsPageAndSort = foundEvents.stream()
-                        .skip(pageRequest.getOffset())
-                        .limit(pageRequest.getPageSize())
-                        .collect(Collectors.toList());
-            }
-            if (sort != null && sort.equals(EventSort.EVENT_DATE)) {
-                eventsPageAndSort = foundEvents.stream()
-                        .sorted(Comparator.comparing(Event::getEventDate))
-                        .skip(pageRequest.getOffset())
-                        .limit(pageRequest.getPageSize())
-                        .collect(Collectors.toList());
-            }
-            if (sort != null && sort.equals(EventSort.VIEWS)) {
-                eventsPageAndSort = foundEvents.stream()
-                        .sorted(Comparator.comparing(this::getViews).reversed())
-                        .skip(pageRequest.getOffset())
-                        .limit(pageRequest.getPageSize())
-                        .collect(Collectors.toList());
-            }
-            statsClient.saveStats("ewm-main-service", request.getRequestURI(), request.getRemoteAddr(), dateTimeNow);//?
-            var result = EventConverter.mapToShortDto(eventsPageAndSort);
-            setViewsForListShortDto(result);
-            return result;
+        if (foundEvents.isEmpty()) {
+            return Collections.emptyList();
         }
+
+        List<Event> eventsPageAndSort = new ArrayList<>();
+        if (request.getSort() == null) {
+            eventsPageAndSort = foundEvents.stream()
+                    .skip(pageRequest.getOffset())
+                    .limit(pageRequest.getPageSize())
+                    .collect(Collectors.toList());
+        }
+        if (request.getSort() != null && request.getSort().equals(EventSort.EVENT_DATE)) {
+            eventsPageAndSort = foundEvents.stream()
+                    .sorted(Comparator.comparing(Event::getEventDate))
+                    .skip(pageRequest.getOffset())
+                    .limit(pageRequest.getPageSize())
+                    .collect(Collectors.toList());
+        }
+
+        var result = EventConverter.mapToShortDto(eventsPageAndSort);
+
+        setViewsForListShortDto(result);
+        statsClient.saveStats("ewm-main-service", uri, ip, dateTimeNow);
+
+        if (request.getSort() != null && request.getSort().equals(EventSort.VIEWS)) {
+            return result.stream()
+                    .sorted(Comparator.comparing(EventShortDto::getViews).reversed())
+                    .skip(pageRequest.getOffset())
+                    .limit(pageRequest.getPageSize())
+                    .collect(Collectors.toList());
+        }
+        return result;
     }
 
-    public EventFullDto getEventByIdPublic(Long id, HttpServletRequest request) {
+    public EventFullDto getEventByIdPublic(Long id, String uri, String ip) {
         Event foundEvent = eventRepository.findByIdAndState(id, EventState.PUBLISHED)
-                .orElseThrow(() -> new MainNotFoundException("Event with id=" + id + " was not found"));
+                .orElseThrow(() -> new MainNotFoundException(String.format("Event with id=%s was not found", id)));
 
         var dateTimeNow = LocalDateTime.now();
-        statsClient.saveStats("ewm-main-service", request.getRequestURI(), request.getRemoteAddr(), dateTimeNow);
+        statsClient.saveStats("ewm-main-service", uri, ip, dateTimeNow);
         Long viewsFromStats = getViews(foundEvent);
         var result = EventConverter.convertToDtoFull(foundEvent);
         result.setViews(viewsFromStats);

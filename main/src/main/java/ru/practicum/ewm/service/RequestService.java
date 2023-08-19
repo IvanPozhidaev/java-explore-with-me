@@ -1,6 +1,6 @@
 package ru.practicum.ewm.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.practicum.ewm.converter.RequestConverter;
 import ru.practicum.ewm.dto.RequestDto;
@@ -18,33 +18,25 @@ import ru.practicum.ewm.util.EventUtils;
 
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 @Service
+@RequiredArgsConstructor
 public class RequestService {
-
     private final RequestRepository requestRepository;
+    private final EventService eventService;
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
-
-    @Autowired
-    public RequestService(RequestRepository requestRepository,
-                          EventRepository eventRepository,
-                          UserRepository userRepository) {
-        this.requestRepository = requestRepository;
-        this.eventRepository = eventRepository;
-        this.userRepository = userRepository;
-    }
 
     @Transactional
     public RequestDto addRequest(Long userId, Long eventId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new MainNotFoundException("User with id=" + userId + " was not found"));
+                .orElseThrow(() -> new MainNotFoundException(String.format("User with id=%s was not found", userId)));
 
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new MainNotFoundException("Event with id=" + eventId + " was not found"));
+                .orElseThrow(() -> new MainNotFoundException(String.format("Event with id=%s was not found", eventId)));
 
         Boolean isRequestExist = requestRepository.existsByEventIdAndRequesterId(eventId, userId);
         if (isRequestExist) {
@@ -73,15 +65,13 @@ public class RequestService {
             created.setStatus(RequestStatus.PENDING);
         }
 
-        int confirmed = event.getConfirmedRequests();
+        long confirmedRequests = eventService.getCountConfirmedRequestsByEvent(event);
         int limit = event.getParticipantLimit();
 
         if (limit == 0) {
-            event.setConfirmedRequests(confirmed + 1);
             created.setStatus(RequestStatus.CONFIRMED);
-        } else if (confirmed < limit) {
+        } else if (confirmedRequests < limit) {
             if (!event.getRequestModeration()) {
-                event.setConfirmedRequests(confirmed + 1);
                 created.setStatus(RequestStatus.PENDING);
             }
         } else {
@@ -95,20 +85,18 @@ public class RequestService {
 
     public List<RequestDto> getRequestsInNotHisEvents(Long userId) {
         var result = requestRepository.findByRequesterId(userId);
-        if (result.size() == 0) {
-            return new ArrayList<>();
-        }
-        return RequestConverter.mapToDto(result);
+        return result.size() == 0 ? Collections.emptyList() : RequestConverter.mapToDto(result);
     }
 
     @Transactional
     public RequestDto cancelRequest(Long userId, Long requestId) {
         var request = requestRepository.findByIdAndRequesterId(requestId, userId)
                 .orElseThrow(() -> new MainNotFoundException(
-                        "Request with id=" + requestId + " from user with id=" + userId + " was not found"));
+                        String.format("Request with id=%s from user with id=%s was not found", requestId, userId)));
 
         request.setStatus(RequestStatus.CANCELED);
         var updatesRequest = requestRepository.save(request);
+
         return RequestConverter.convertToDto(updatesRequest);
     }
 }

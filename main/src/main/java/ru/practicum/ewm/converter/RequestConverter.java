@@ -4,6 +4,7 @@ import ru.practicum.ewm.dto.RequestDto;
 import ru.practicum.ewm.entity.Event;
 import ru.practicum.ewm.entity.Request;
 import ru.practicum.ewm.entity.User;
+import ru.practicum.ewm.entity.model.RequestStatus;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,6 +22,7 @@ public class RequestConverter {
         Request model = new Request();
         model.setEvent(event);
         model.setRequester(user);
+        model.setStatus(RequestStatus.PENDING);
         return model;
     }
 

@@ -1,5 +1,6 @@
 package ru.practicum.ewm.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -10,17 +11,14 @@ import ru.practicum.ewm.repository.CategoryRepository;
 import ru.practicum.ewm.util.PageHelper;
 
 import javax.transaction.Transactional;
+import java.util.Collections;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
-
-    @Autowired
-    public CategoryService(CategoryRepository categoryRepository) {
-        this.categoryRepository = categoryRepository;
-    }
 
     public CategoryDto addCategory(CategoryDto categoryDto) {
         var created = CategoryConverter.convertToModel(categoryDto);
@@ -44,7 +42,7 @@ public class CategoryService {
     public List<CategoryDto> getCategories(int from, int size) {
         PageRequest pageRequest = PageHelper.createRequest(from, size);
         var result = categoryRepository.findAll(pageRequest).getContent();
-        return result.size() == 0 ? List.of() : CategoryConverter.mapToDto(result);
+        return result.size() == 0 ? Collections.emptyList() : CategoryConverter.mapToDto(result);
     }
 
     public CategoryDto getCategoryById(Long catId) {

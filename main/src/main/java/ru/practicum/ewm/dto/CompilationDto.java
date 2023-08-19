@@ -1,15 +1,16 @@
 package ru.practicum.ewm.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import ru.practicum.ewm.entity.Event;
+import lombok.Setter;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import java.util.List;
 
-@Data
+@Setter
+@Getter
 @AllArgsConstructor
 @NoArgsConstructor
 public class CompilationDto {
@@ -20,7 +21,8 @@ public class CompilationDto {
     private String title;
 
     private Boolean pinned;
-    private List<Event> events;
+
+    private List<EventShortDto> events;
 
     public Boolean getPinned() {
         if (pinned == null) {
