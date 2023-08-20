@@ -1,4 +1,4 @@
-package ru.practicum.ewm.stats.model;
+package ru.practicum.ewm.stats.entity;
 
 import lombok.*;
 
@@ -7,12 +7,12 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@Entity
 @AllArgsConstructor
 @RequiredArgsConstructor
 @NoArgsConstructor(force = true)
+@Entity
 @Table(name = "hits", schema = "public")
-public class HitModel {
+public class Hit {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private final Long id;

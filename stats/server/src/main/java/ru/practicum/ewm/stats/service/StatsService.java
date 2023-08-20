@@ -4,8 +4,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.practicum.ewm.stats.collective.HitDto;
 import ru.practicum.ewm.stats.collective.StatsDto;
-import ru.practicum.ewm.stats.model.ConverterModelDto;
-import ru.practicum.ewm.stats.model.HitModel;
+import ru.practicum.ewm.stats.converter.ConverterModelDto;
+import ru.practicum.ewm.stats.entity.Hit;
+import ru.practicum.ewm.stats.exception.ParameterException;
 import ru.practicum.ewm.stats.repository.StatsRepositoryJpa;
 
 import java.time.LocalDateTime;
@@ -22,11 +23,13 @@ public class StatsService {
     }
 
     public void addHit(HitDto hitDto) {
-        HitModel addedHitModel = ConverterModelDto.convertToModel(hitDto);
-        statsRepository.save(addedHitModel);
+        Hit addedHit = ConverterModelDto.convertToModel(hitDto);
+        statsRepository.save(addedHit);
     }
 
     public List<StatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean uniq) {
+        checkStartIsAfterEnd(start, end);
+
         if (uniq) {
             if (uris == null) {
                 return statsRepository.findAllUniqueIp(start, end);
@@ -37,6 +40,12 @@ public class StatsService {
                 return statsRepository.findAll(start, end);
             }
             return statsRepository.findAllByUris(start, end, uris);
+        }
+    }
+
+    private void checkStartIsAfterEnd(LocalDateTime start, LocalDateTime end) {
+        if (start.isAfter(end)) {
+            throw new ParameterException("Start date must be before end date");
         }
     }
 }
