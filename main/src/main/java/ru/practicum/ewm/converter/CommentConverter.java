@@ -2,11 +2,11 @@ package ru.practicum.ewm.converter;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import ru.practicum.ewm.dto.CommentDto;
+import ru.practicum.ewm.dto.CommentShortDto;
 import ru.practicum.ewm.entity.Comment;
 import ru.practicum.ewm.entity.Event;
 import ru.practicum.ewm.entity.User;
-import ru.practicum.ewm.dto.CommentDto;
-import ru.practicum.ewm.dto.CommentShortDto;
 
 import java.util.ArrayList;
 import java.util.List;
