@@ -43,7 +43,7 @@ public class UserService {
     }
 
     public void checkExistUserById(Long userId) {
-        if(!userRepository.existsById(userId)) {
+        if (!userRepository.existsById(userId)) {
             throw new MainNotFoundException(String.format("User with id=%s was not found", userId));
         }
     }

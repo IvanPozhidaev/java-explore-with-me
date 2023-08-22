@@ -56,7 +56,7 @@ public class RequestService {
         int confirmedRequests = requestRepository.countConfirmedByEventId(event.getId());
         int limit = event.getParticipantLimit();
 
-        if(limit != 0 && confirmedRequests > limit) {
+        if (limit != 0 && confirmedRequests > limit) {
             throw new MainParamConflictException(String.format("There are no free places to events with id='%s'",
                     eventId));
         }
