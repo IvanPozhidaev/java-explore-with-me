@@ -1,11 +1,11 @@
 {
 	"info": {
-		"_postman_id": "b8e592f9-c1e2-4962-8e27-554704d244b5",
-		"name": "feature",
-		"description": "Collection of tests for feature branch.",
+		"_postman_id": "ab8be38d-f64c-464e-bb2d-cf6556080e50",
+		"name": "feature_comments Copy",
+		"description": "Collection for feature branch",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "26603691",
-		"_collection_link": "https://galactic-trinity-975089.postman.co/workspace/Team-Workspace~d853cec0-e07a-4b7c-82d3-db838665c152/collection/26603691-b8e592f9-c1e2-4962-8e27-554704d244b5?action=share&source=collection_link&creator=26603691"
+		"_collection_link": "https://galactic-trinity-975089.postman.co/workspace/Team-Workspace~d853cec0-e07a-4b7c-82d3-db838665c152/collection/26603691-ab8be38d-f64c-464e-bb2d-cf6556080e50?action=share&source=collection_link&creator=26603691"
 	},
 	"item": [
 		{
@@ -617,7 +617,7 @@
 					"response": []
 				},
 				{
-					"name": "Create comment for  event by not exist event",
+					"name": "Create comment for  not exist event",
 					"event": [
 						{
 							"listen": "prerequest",
@@ -633,9 +633,7 @@
 									"        let eventBody = rnd.getEvent(category.id);\r",
 									"        eventBody['requestModeration'] = true\r",
 									"        let event = await api.addEvent(user.id, eventBody);\r",
-									"\r",
-									"        pm.request.body\r",
-									"\r",
+									"        event = await api.publishEvent(user.id);\r",
 									"        let comment;\r",
 									"        try {\r",
 									"            comment = rnd.getComment();\r",
