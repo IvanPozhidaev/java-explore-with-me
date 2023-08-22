@@ -1,11 +1,11 @@
 {
 	"info": {
-		"_postman_id": "6445b002-8aa7-4ad7-8d7a-80964d3c3bc2",
+		"_postman_id": "d07cd4f3-dcd0-415d-b5f2-5748167dde17",
 		"name": "feature",
 		"description": "Collection for feature branch",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "26603691",
-		"_collection_link": "https://galactic-trinity-975089.postman.co/workspace/Team-Workspace~d853cec0-e07a-4b7c-82d3-db838665c152/collection/26603691-6445b002-8aa7-4ad7-8d7a-80964d3c3bc2?action=share&source=collection_link&creator=26603691"
+		"_collection_link": "https://galactic-trinity-975089.postman.co/workspace/Team-Workspace~d853cec0-e07a-4b7c-82d3-db838665c152/collection/26603691-d07cd4f3-dcd0-415d-b5f2-5748167dde17?action=share&source=collection_link&creator=26603691"
 	},
 	"item": [
 		{
@@ -1091,7 +1091,7 @@
 									"            options: { raw: { language: 'json' } }\r",
 									"        });\r",
 									"\r",
-									"        api.addComment(user.id, event.id, comment);\r",
+									"        let createdComment = await api.addComment(user.id, event.id, comment);\r",
 									"\r",
 									"        pm.collectionVariables.set(\"eid\", event.id)\r",
 									"    } catch(err) {\r",
@@ -1134,7 +1134,7 @@
 									"    pm.expect(target).to.have.property('qtyComments');\r",
 									"});\r",
 									"\r",
-									"pm.test(\"Количество комментариев должно быть равно \", function () {\r",
+									"pm.test(\"Количество комментариев должно быть равно 1 \", function () {\r",
 									"    pm.expect(target.qtyComments).equal(1);\r",
 									"});"
 								],
