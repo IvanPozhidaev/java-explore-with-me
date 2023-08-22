@@ -43,7 +43,7 @@ public class CommentConverter {
     }
 
     public static CommentShortDto convertToShortDto(Comment model) {
-        return new CommentShortDto(
+        return new CommentShortDto(model.getId(),
                 model.getText(),
                 model.getAuthor().getName(),
                 model.getCreated()

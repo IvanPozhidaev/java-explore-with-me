@@ -90,6 +90,7 @@ public class EventService {
 
         var result = EventConverter.convertToDtoFull(foundEvent);
         result.setViews(getViews(foundEvent));
+
         return result;
     }
 
@@ -168,7 +169,7 @@ public class EventService {
                 new MainNotFoundException(String.format(
                         "Event with id=%s and added by user id=%s was not found", eventId, userId)));
 
-        var listRequests = requestRepository.findByEventId(eventId);
+        var listRequests = requestRepository.findAllByEventId(eventId);
         return RequestConverter.mapToDto(listRequests);
     }
 
@@ -177,8 +178,8 @@ public class EventService {
                 .orElseThrow(() -> new MainNotFoundException(
                         String.format("Event with id=%s and added by user id=%s was not found", eventId, userId)));
 
-        long confirmedRequests = getCountConfirmedRequestsByEvent(event);
-        if (confirmedRequests >= event.getParticipantLimit()) {
+        int confirmedRequests = requestRepository.countConfirmedByEventId(event.getId());
+        if (confirmedRequests > event.getParticipantLimit()) {
             throw new MainParamConflictException("The limit of participation in the event has been reached");
         }
 
@@ -211,10 +212,11 @@ public class EventService {
                         request.setStatus(RequestStatus.CONFIRMED);
                         confReq++;
                         if (event.getParticipantLimit() == confReq) {
-                            for (Request rm : event.getAllRequests()) {
-                                if (rm.getStatus().equals(RequestStatus.PENDING)) {
-                                    rm.setStatus(RequestStatus.REJECTED);
-                                }
+                            if (event.getParticipantLimit() == confReq) {
+                                event.getAllRequests()
+                                        .stream()
+                                        .filter(rm -> rm.getStatus().equals(RequestStatus.PENDING))
+                                        .forEach(rm -> rm.setStatus(RequestStatus.REJECTED));
                             }
                         }
                         afterUpdateStatus.getConfirmedRequests().add(RequestConverter.convertToDto(request));
@@ -231,17 +233,9 @@ public class EventService {
             }
         }
         requestRepository.saveAll(selectedRequests);
-        eventRepository.save(event);
         return afterUpdateStatus;
     }
 
-    public long getCountConfirmedRequestsByEvent(Event event) {
-        List<Request> requests = requestRepository.findByEventId(event.getId());
-        return !event.getRequestModeration()
-                ? requests.stream().filter(request -> request.getStatus().equals(RequestStatus.CONFIRMED) ||
-                request.getStatus().equals(RequestStatus.PENDING)).count()
-                : requests.stream().filter(request -> request.getStatus().equals(RequestStatus.CONFIRMED)).count();
-    }
 
     public List<EventFullDto> searchEventsAdmin(Long[] users, List<EventState> states, Long[] categories,
                                                 LocalDateTime rangeStart, LocalDateTime rangeEnd, int from, int size) {
@@ -266,7 +260,9 @@ public class EventService {
 
         List<Event> foundEventsAdmin = eventRepository.findAll(predicateAdmin, pageRequest).toList();
 
-        List<Request> requestCountDtos = requestRepository.findByEventIdIn(foundEventsAdmin.stream().map(Event::getId).collect(Collectors.toList()));
+        List<Request> requestCountDtos = requestRepository.findConfirmedByEventIdIn(foundEventsAdmin.stream()
+                .map(Event::getId)
+                .collect(Collectors.toList()));
 
         Map<Long, Long> collect = requestCountDtos.stream()
                 .filter(request -> request.getStatus().equals(RequestStatus.CONFIRMED))
@@ -280,8 +276,8 @@ public class EventService {
             setViewsForListShortDto(result);
 
             result.forEach(eventFullDto -> {
-                Long count = collect.get(eventFullDto.getId());
-                eventFullDto.setConfirmedRequests(Objects.requireNonNullElse(count, 0L));
+                Long count = collect.getOrDefault(eventFullDto.getId(), 0L);
+                eventFullDto.setConfirmedRequests(count);
             });
             return result;
         }
@@ -478,6 +474,17 @@ public class EventService {
                     events.get(i).setViews(0L);
                 }
             }
+        }
+    }
+
+    public Event getIfExistEventById(Long eventId) {
+        return eventRepository.findById(eventId)
+                .orElseThrow(() -> new MainNotFoundException(String.format("Event with id=%s was not found", eventId)));
+    }
+
+    public void checkExistEventById(Long eventId) {
+        if (!eventRepository.existsById(eventId)) {
+            throw new MainNotFoundException(String.format("Event with id=%s was not found", eventId));
         }
     }
 }

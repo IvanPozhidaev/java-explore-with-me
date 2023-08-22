@@ -11,9 +11,7 @@ import ru.practicum.ewm.entity.model.EventState;
 import ru.practicum.ewm.entity.model.RequestStatus;
 import ru.practicum.ewm.exception.MainNotFoundException;
 import ru.practicum.ewm.exception.MainParamConflictException;
-import ru.practicum.ewm.repository.EventRepository;
 import ru.practicum.ewm.repository.RequestRepository;
-import ru.practicum.ewm.repository.UserRepository;
 import ru.practicum.ewm.util.EventUtils;
 
 import javax.transaction.Transactional;
@@ -27,16 +25,12 @@ import java.util.Objects;
 public class RequestService {
     private final RequestRepository requestRepository;
     private final EventService eventService;
-    private final EventRepository eventRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     @Transactional
     public RequestDto addRequest(Long userId, Long eventId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new MainNotFoundException(String.format("User with id=%s was not found", userId)));
-
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new MainNotFoundException(String.format("Event with id=%s was not found", eventId)));
+        User user = userService.getIfExistUserById(userId);
+        Event event = eventService.getIfExistEventById(eventId);
 
         Boolean isRequestExist = requestRepository.existsByEventIdAndRequesterId(eventId, userId);
         if (isRequestExist) {
@@ -59,24 +53,17 @@ public class RequestService {
         Request created = RequestConverter.convertToModel(user, event);
         created.setCreated(LocalDateTime.now());
 
-        if (event.getRequestModeration().equals(false) || event.getParticipantLimit() == 0) {
+        int confirmedRequests = requestRepository.countConfirmedByEventId(event.getId());
+        int limit = event.getParticipantLimit();
+
+        if(limit != 0 && confirmedRequests > limit) {
+            throw new MainParamConflictException(String.format("There are no free places to events with id='%s'",
+                    eventId));
+        }
+        if (!event.getRequestModeration() || event.getParticipantLimit() == 0) {
             created.setStatus(RequestStatus.CONFIRMED);
         } else {
             created.setStatus(RequestStatus.PENDING);
-        }
-
-        long confirmedRequests = eventService.getCountConfirmedRequestsByEvent(event);
-        int limit = event.getParticipantLimit();
-
-        if (limit == 0) {
-            created.setStatus(RequestStatus.CONFIRMED);
-        } else if (confirmedRequests < limit) {
-            if (!event.getRequestModeration()) {
-                created.setStatus(RequestStatus.PENDING);
-            }
-        } else {
-            throw new MainParamConflictException(String.format("There are no free places to events with id='%s'",
-                    eventId));
         }
 
         var savedRequest = requestRepository.save(created);

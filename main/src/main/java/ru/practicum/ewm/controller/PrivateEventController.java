@@ -34,17 +34,15 @@ public class PrivateEventController {
     public List<EventShortDto> getEventsByInitiator(@PathVariable Long userId,
                                                     @RequestParam(required = false, defaultValue = "0") int from,
                                                     @RequestParam(required = false, defaultValue = "10") int size) {
-        var events = eventService.getAllEventsByInitiatorPrivate(userId, from, size);
         log.info("[GET /users/{userId}/events?from={from}&size={size}] (Private). " +
                 "Get events from user (id): {} with param from: {} size: {}", userId, from, size);
-        return events;
+        return eventService.getAllEventsByInitiatorPrivate(userId, from, size);
     }
 
     @GetMapping("/{eventId}")
     public EventFullDto getEventByIdPrivate(@PathVariable Long userId, @PathVariable Long eventId) {
-        var eventById = eventService.getEventByIdPrivate(userId, eventId);
         log.info("[GET /users/{userId}/events/{eventId}] (Private). Get event (id): {} from user (id): {}", eventId, userId);
-        return eventById;
+        return eventService.getEventByIdPrivate(userId, eventId);
     }
 
     @PatchMapping("/{eventId}")

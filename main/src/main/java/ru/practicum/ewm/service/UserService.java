@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.ewm.converter.UserConverter;
 import ru.practicum.ewm.dto.UserDto;
 import ru.practicum.ewm.entity.User;
+import ru.practicum.ewm.exception.MainNotFoundException;
 import ru.practicum.ewm.repository.UserRepository;
 import ru.practicum.ewm.util.PageHelper;
 
@@ -15,7 +16,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-
     private final UserRepository userRepository;
 
     public UserDto addUser(UserDto userDto) {
@@ -35,5 +35,16 @@ public class UserService {
 
     public void deleteUser(Long userId) {
         userRepository.deleteById(userId);
+    }
+
+    public User getIfExistUserById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new MainNotFoundException(String.format("User with id=%s was not found", userId)));
+    }
+
+    public void checkExistUserById(Long userId) {
+        if(!userRepository.existsById(userId)) {
+            throw new MainNotFoundException(String.format("User with id=%s was not found", userId));
+        }
     }
 }

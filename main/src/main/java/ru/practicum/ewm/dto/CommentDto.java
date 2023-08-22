@@ -21,8 +21,6 @@ public class CommentDto {
     @Size(max = 512)
     private String text;
 
-    @NotBlank
-    @Size(min = 2, max = 250)
     private String authorName;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
