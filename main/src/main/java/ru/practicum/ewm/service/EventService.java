@@ -439,7 +439,7 @@ public class EventService {
         var result = EventConverter.convertToDtoFull(foundEvent);
         result.setViews(viewsFromStats);
 
-        var comments =  commentRepository.findTop10ByEventIdOrderByCreatedDesc(foundEvent.getId());
+        var comments = commentRepository.findTop10ByEventIdOrderByCreatedDesc(foundEvent.getId());
         result.setComments(CommentConverter.mapToDto(comments));
 
         return result;
