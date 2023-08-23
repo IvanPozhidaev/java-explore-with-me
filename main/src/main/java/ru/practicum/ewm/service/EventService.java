@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import ru.practicum.ewm.converter.CategoryConverter;
+import ru.practicum.ewm.converter.CommentConverter;
 import ru.practicum.ewm.converter.EventConverter;
 import ru.practicum.ewm.converter.RequestConverter;
 import ru.practicum.ewm.dto.*;
@@ -19,10 +20,7 @@ import ru.practicum.ewm.entity.model.*;
 import ru.practicum.ewm.exception.MainNotFoundException;
 import ru.practicum.ewm.exception.MainParamConflictException;
 import ru.practicum.ewm.exception.MainParameterException;
-import ru.practicum.ewm.repository.EventRepository;
-import ru.practicum.ewm.repository.LocationRepository;
-import ru.practicum.ewm.repository.RequestRepository;
-import ru.practicum.ewm.repository.UserRepository;
+import ru.practicum.ewm.repository.*;
 import ru.practicum.ewm.stats.client.StatsClient;
 import ru.practicum.ewm.stats.collective.StatsDto;
 import ru.practicum.ewm.util.EventUtils;
@@ -45,6 +43,7 @@ public class EventService {
     private final LocationRepository locationRepository;
     private final StatsClient statsClient;
     private final CategoryService categoryService;
+    private final CommentRepository commentRepository;
 
     public EventFullDto addEvent(Long userId, EventDto eventDto) {
         var user = userRepository.findById(userId)
@@ -90,6 +89,9 @@ public class EventService {
 
         var result = EventConverter.convertToDtoFull(foundEvent);
         result.setViews(getViews(foundEvent));
+
+        var comments = commentRepository.findAllByEventId(eventId);
+        result.setComments(CommentConverter.mapToDto(comments));
 
         return result;
     }
@@ -436,6 +438,10 @@ public class EventService {
         Long viewsFromStats = getViews(foundEvent);
         var result = EventConverter.convertToDtoFull(foundEvent);
         result.setViews(viewsFromStats);
+
+        var comments =  commentRepository.findTop10ByEventIdOrderByCreatedDesc(foundEvent.getId());
+        result.setComments(CommentConverter.mapToDto(comments));
+
         return result;
     }
 
@@ -474,17 +480,6 @@ public class EventService {
                     events.get(i).setViews(0L);
                 }
             }
-        }
-    }
-
-    public Event getIfExistEventById(Long eventId) {
-        return eventRepository.findById(eventId)
-                .orElseThrow(() -> new MainNotFoundException(String.format("Event with id=%s was not found", eventId)));
-    }
-
-    public void checkExistEventById(Long eventId) {
-        if (!eventRepository.existsById(eventId)) {
-            throw new MainNotFoundException(String.format("Event with id=%s was not found", eventId));
         }
     }
 }

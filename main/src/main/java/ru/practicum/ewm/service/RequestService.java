@@ -11,6 +11,7 @@ import ru.practicum.ewm.entity.model.EventState;
 import ru.practicum.ewm.entity.model.RequestStatus;
 import ru.practicum.ewm.exception.MainNotFoundException;
 import ru.practicum.ewm.exception.MainParamConflictException;
+import ru.practicum.ewm.repository.EventRepository;
 import ru.practicum.ewm.repository.RequestRepository;
 import ru.practicum.ewm.util.EventUtils;
 
@@ -24,13 +25,14 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class RequestService {
     private final RequestRepository requestRepository;
-    private final EventService eventService;
+    private final EventRepository eventRepository;
     private final UserService userService;
 
     @Transactional
     public RequestDto addRequest(Long userId, Long eventId) {
         User user = userService.getIfExistUserById(userId);
-        Event event = eventService.getIfExistEventById(eventId);
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new MainNotFoundException(String.format("Event with id=%s was not found", eventId)));
 
         Boolean isRequestExist = requestRepository.existsByEventIdAndRequesterId(eventId, userId);
         if (isRequestExist) {

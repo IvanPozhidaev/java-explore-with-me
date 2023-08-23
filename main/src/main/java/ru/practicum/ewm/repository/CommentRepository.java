@@ -16,4 +16,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     @Query(value = "select c from Comment c join fetch c.event e where e.state =?1 and e.id =?2")
     List<Comment> findAllByStateAndEventId(@Param(value = "state") String state, @Param(value = "eventId") Long eventId,
                                            PageRequest pageRequest);
+
+    List<Comment> findTop10ByEventIdOrderByCreatedDesc(Long eventId);
+
+    List<Comment> findAllByEventId(Long eventId);
 }
