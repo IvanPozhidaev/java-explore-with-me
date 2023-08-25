@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import ru.practicum.ewm.converter.CategoryConverter;
+import ru.practicum.ewm.converter.CommentConverter;
 import ru.practicum.ewm.converter.EventConverter;
 import ru.practicum.ewm.converter.RequestConverter;
 import ru.practicum.ewm.dto.*;
@@ -19,10 +20,7 @@ import ru.practicum.ewm.entity.model.*;
 import ru.practicum.ewm.exception.MainNotFoundException;
 import ru.practicum.ewm.exception.MainParamConflictException;
 import ru.practicum.ewm.exception.MainParameterException;
-import ru.practicum.ewm.repository.EventRepository;
-import ru.practicum.ewm.repository.LocationRepository;
-import ru.practicum.ewm.repository.RequestRepository;
-import ru.practicum.ewm.repository.UserRepository;
+import ru.practicum.ewm.repository.*;
 import ru.practicum.ewm.stats.client.StatsClient;
 import ru.practicum.ewm.stats.collective.StatsDto;
 import ru.practicum.ewm.util.EventUtils;
@@ -45,6 +43,7 @@ public class EventService {
     private final LocationRepository locationRepository;
     private final StatsClient statsClient;
     private final CategoryService categoryService;
+    private final CommentRepository commentRepository;
 
     public EventFullDto addEvent(Long userId, EventDto eventDto) {
         var user = userRepository.findById(userId)
@@ -90,6 +89,10 @@ public class EventService {
 
         var result = EventConverter.convertToDtoFull(foundEvent);
         result.setViews(getViews(foundEvent));
+
+        var comments = commentRepository.findAllByEventId(eventId);
+        result.setComments(CommentConverter.mapToDto(comments));
+
         return result;
     }
 
@@ -168,7 +171,7 @@ public class EventService {
                 new MainNotFoundException(String.format(
                         "Event with id=%s and added by user id=%s was not found", eventId, userId)));
 
-        var listRequests = requestRepository.findByEventId(eventId);
+        var listRequests = requestRepository.findAllByEventId(eventId);
         return RequestConverter.mapToDto(listRequests);
     }
 
@@ -177,8 +180,8 @@ public class EventService {
                 .orElseThrow(() -> new MainNotFoundException(
                         String.format("Event with id=%s and added by user id=%s was not found", eventId, userId)));
 
-        long confirmedRequests = getCountConfirmedRequestsByEvent(event);
-        if (confirmedRequests >= event.getParticipantLimit()) {
+        int confirmedRequests = requestRepository.countConfirmedByEventId(event.getId());
+        if (confirmedRequests > event.getParticipantLimit()) {
             throw new MainParamConflictException("The limit of participation in the event has been reached");
         }
 
@@ -211,10 +214,11 @@ public class EventService {
                         request.setStatus(RequestStatus.CONFIRMED);
                         confReq++;
                         if (event.getParticipantLimit() == confReq) {
-                            for (Request rm : event.getAllRequests()) {
-                                if (rm.getStatus().equals(RequestStatus.PENDING)) {
-                                    rm.setStatus(RequestStatus.REJECTED);
-                                }
+                            if (event.getParticipantLimit() == confReq) {
+                                event.getAllRequests()
+                                        .stream()
+                                        .filter(rm -> rm.getStatus().equals(RequestStatus.PENDING))
+                                        .forEach(rm -> rm.setStatus(RequestStatus.REJECTED));
                             }
                         }
                         afterUpdateStatus.getConfirmedRequests().add(RequestConverter.convertToDto(request));
@@ -231,17 +235,9 @@ public class EventService {
             }
         }
         requestRepository.saveAll(selectedRequests);
-        eventRepository.save(event);
         return afterUpdateStatus;
     }
 
-    public long getCountConfirmedRequestsByEvent(Event event) {
-        List<Request> requests = requestRepository.findByEventId(event.getId());
-        return !event.getRequestModeration()
-                ? requests.stream().filter(request -> request.getStatus().equals(RequestStatus.CONFIRMED) ||
-                request.getStatus().equals(RequestStatus.PENDING)).count()
-                : requests.stream().filter(request -> request.getStatus().equals(RequestStatus.CONFIRMED)).count();
-    }
 
     public List<EventFullDto> searchEventsAdmin(Long[] users, List<EventState> states, Long[] categories,
                                                 LocalDateTime rangeStart, LocalDateTime rangeEnd, int from, int size) {
@@ -266,7 +262,9 @@ public class EventService {
 
         List<Event> foundEventsAdmin = eventRepository.findAll(predicateAdmin, pageRequest).toList();
 
-        List<Request> requestCountDtos = requestRepository.findByEventIdIn(foundEventsAdmin.stream().map(Event::getId).collect(Collectors.toList()));
+        List<Request> requestCountDtos = requestRepository.findConfirmedByEventIdIn(foundEventsAdmin.stream()
+                .map(Event::getId)
+                .collect(Collectors.toList()));
 
         Map<Long, Long> collect = requestCountDtos.stream()
                 .filter(request -> request.getStatus().equals(RequestStatus.CONFIRMED))
@@ -280,8 +278,8 @@ public class EventService {
             setViewsForListShortDto(result);
 
             result.forEach(eventFullDto -> {
-                Long count = collect.get(eventFullDto.getId());
-                eventFullDto.setConfirmedRequests(Objects.requireNonNullElse(count, 0L));
+                Long count = collect.getOrDefault(eventFullDto.getId(), 0L);
+                eventFullDto.setConfirmedRequests(count);
             });
             return result;
         }
@@ -440,6 +438,10 @@ public class EventService {
         Long viewsFromStats = getViews(foundEvent);
         var result = EventConverter.convertToDtoFull(foundEvent);
         result.setViews(viewsFromStats);
+
+        var comments = commentRepository.findTop10ByEventIdOrderByCreatedDesc(foundEvent.getId());
+        result.setComments(CommentConverter.mapToDto(comments));
+
         return result;
     }
 

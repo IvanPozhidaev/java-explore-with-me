@@ -7,6 +7,7 @@ import ru.practicum.ewm.converter.CompilationConverter;
 import ru.practicum.ewm.dto.CompilationDto;
 import ru.practicum.ewm.dto.CompilationNewDto;
 import ru.practicum.ewm.dto.CompilationUpdateDto;
+import ru.practicum.ewm.entity.Compilation;
 import ru.practicum.ewm.entity.Event;
 import ru.practicum.ewm.exception.MainNotFoundException;
 import ru.practicum.ewm.repository.CompilationRepository;
@@ -64,7 +65,10 @@ public class CompilationService {
 
     public List<CompilationDto> getCompilations(Boolean pinned, int from, int size) {
         PageRequest pageRequest = PageHelper.createRequest(from, size);
-        var result = compilationRepository.findAllByPinned(pinned, pageRequest);
+        List<Compilation> result;
+        result = (pinned != null)
+                ? compilationRepository.findAllByPinned(pinned, pageRequest)
+                : compilationRepository.findAll(pageRequest).getContent();
 
         return result.size() == 0 ? Collections.emptyList() : CompilationConverter.mapToDto(result);
     }

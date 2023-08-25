@@ -66,4 +66,16 @@ public class Event {
     @Enumerated(EnumType.STRING)
     @Column(name = "state")
     private EventState state;
+
+    @OneToMany
+    @JoinColumn(name = "event_id")
+    private List<Comment> commentModelList;
+
+    public long countComments() {
+        long result = 0L;
+        if (commentModelList != null) {
+            result = commentModelList.size();
+        }
+        return result;
+    }
 }

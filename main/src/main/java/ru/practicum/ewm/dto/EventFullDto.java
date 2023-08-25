@@ -5,6 +5,7 @@ import lombok.*;
 import ru.practicum.ewm.entity.model.EventState;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Setter
 @Getter
@@ -25,4 +26,6 @@ public class EventFullDto extends EventShortDto {
     private Boolean requestModeration;
 
     private EventState state;
+
+    private List<CommentDto> comments;
 }
